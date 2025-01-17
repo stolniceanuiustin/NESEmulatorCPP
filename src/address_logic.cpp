@@ -25,8 +25,8 @@ uint16_t CPU::compute_addr_mode_g1(bool &page_cross)
     }
     case 0x02: // Immediate. The opperand is in the next byte of memory
     {
-        //TODO CHECK THIS
-        address = PC+1;
+        //FIXED THIS
+        address = PC;
         PC += 1;
         break;
     }
@@ -79,11 +79,8 @@ uint16_t CPU::compute_addr_mode_g1(bool &page_cross)
             break;
         }
     }
-    // We got the offset of the address but we have to return it as a pointer, so we return it as an offset to ram
     return address;
 
-    // I no longer do pointer returns
-    // return cpu->ram + address;
 }
 
 bool CPU::compute_addr_mode_g23(bool &page_cross, uint16_t &address_to_return)

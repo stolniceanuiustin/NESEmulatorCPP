@@ -7,14 +7,14 @@ void CPU::NOP()
 
 void CPU::JSR_abs(uint16_t address)
 {
-    push(PC);
+    push_address(PC);
     PC = address;
     cycles += 6;
 }
 
 void CPU::RTS()
 {
-    uint16_t aux = pop();
+    uint16_t aux = pop_address();
     aux += 1;
     PC = aux;
     cycles += 6;

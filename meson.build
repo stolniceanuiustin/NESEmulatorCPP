@@ -6,12 +6,11 @@ src_files = [
     'src/main_debug.cpp',
     'src/address_logic.cpp',
     'src/cpu_core.cpp',
-    'src/inst_group_1.cpp',
-    'src/inst_group_2.cpp',
-    'src/inst_group_3.cpp',
-    'src/single_byte_instr.cpp',
-    'src/irregular_functions.cpp',
+    'src/instructions_addressed.cpp',
+    'src/instructions_intrerrupts.cpp',
+    'src/instructions_single_byte.cpp',
     'src/unittest.cpp',
+    'src/tracer.cpp'
 ]
 
 

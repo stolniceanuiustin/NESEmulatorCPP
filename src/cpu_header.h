@@ -24,6 +24,9 @@ struct Instruction
 
 class CPU
 {
+public:
+	struct Instruction inst;
+	byte ram[65536];
 #ifndef TEST
 private:
 #endif 
@@ -36,9 +39,7 @@ public:
 	byte Y;
 	uint16_t PC;
 	byte SP; // Stack pointer
-	byte ram[65536];
 	int cycles;
-
 public:
 	// Cpu Flags
 	byte C; // carry
@@ -48,8 +49,8 @@ public:
 	byte B; // break
 	byte O; // overflow //iN DOCUMENTATION IT'S V BUT O is more intuitive
 	byte N; // negative
-	struct Instruction inst;
-	bool init(Config config);
+	
+	bool init(Config config, bool NES);
 
 	byte ram_at(uint16_t address)
 	{	
@@ -79,6 +80,10 @@ public:
 	{
 		return inst.opcode;
 	}
+	byte get_SP()
+	{
+		return SP;
+	}
 	bool reset();
 	byte read_pc()
 	{
@@ -93,7 +98,9 @@ public:
 	int execute();
 	uint16_t read_abs_address(uint16_t offset);
 	void push(byte x);
+	void push_address(uint16_t address);
 	byte pop();
+	uint16_t pop_address();
 	byte pack_flags();
 	void unpack_flags(byte flags);
 
@@ -174,21 +181,5 @@ public:
 	void trigger_irq();
 };
 
-
-class TRACER
-{
-private:
-	CPU& cpu;
-public:
-	TRACER(CPU& cpu_pointer) : cpu(cpu_pointer)
-	{
-	}
-	void tracer(uint16_t address, bool page_cross, uint16_t original_pc, bool onaddress_group2);
-	void print_flags_group1();
-	void trace_instruction_group3(uint16_t address);
-	void trace_instruction_group2(uint16_t address, bool onaddress_group2);
-	void trace_instruction_group1(uint16_t address);
-	uint16_t read_address_tracer(uint16_t address);
-};
 
 #endif

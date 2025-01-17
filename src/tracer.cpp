@@ -1,216 +1,470 @@
-// #include "cpu_header.h"
-// #include <iostream>
+#include "cpu_header.h"
+#include "tracer.h"
+#include <iostream>
+#include <stdint.h>
+#include <string>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
+using std::cout;
+using std::string;
+using std::getline;
 
-// using std::cout;
-// // WILL TRACE
+std::ifstream logs("nestest.log");
 
+// retruns length of operand!
+byte compute_operand_length_g1(byte bbb)
+{
+    switch (bbb)
+    {
+    case 0x0: //(ZERO PAGE, X). Next byte + X represents an adress in zero page that needs to be refferenced
+    {
+        return 1;
+        break;
+    }
+    case 0x01: // ZERO PAGE.
+    {
+        return 1;
+        break;
+    }
+    case 0x02: // Immediate. The opperand is in the next byte of memory
+    {
+        return 1;
+        break;
+    }
+    case 0x03: // Absolute. The full 16-bit address
+    {
+        return 2;
+        break;
+    }
+    case 0x04: //(zero page), Y; Takes an address from zero page as a pointer then adds Y to that address
+    {          // CAN CROSS PAGES
+        return 1;
+        break;
+    }
+    case 0x05: // zero page, X; basically zeropage_addres + x BUT CANT CROSS PAGE
+    {
+        return 1;
+        break;
+    }
+    case 0x06: // absolute, Y; The full 16-bit address is in memory and we have to add Y
+    {          // CAN CROSS PAGES
+        return 2;
+        break;
+    }
+    case 0x07: // Absolute, X. the same as before
+        // CAN CROSS PAGES
+        {
+            return 2;
+            break;
+        }
+    }
+    return 0;
+}
 
-// //TODO: CHANGE TRACER SO LOGS ARE MORE COMPACT
-// byte read_byte_tracer(byte *address)
-// {
-//     // sleep(CLOCK_TIME);
-//     return (*address);
-// }
+string compute_instruction_name_group1(byte aaa)
+{
+    switch (aaa)
+    {
+    case 0x0:
+        return "ORA";
+        break;
+    case 0x1:
+        return "AND";
+        break;
+    case 0x2:
+        return "EOR";
+        break;
+    case 0x3:
+        return "ADC";
+        break;
+    case 0x4:
+        return "STA";
+        break;
+    case 0x5:
+        return "LDA";
+        break;
+    case 0x6:
+        return "CMP";
+        break;
+    case 0x7:
+        return "SBC";
+        break;
+    }
+}
 
-// //Reads an address(16 bits)
-// uint16_t TRACER::read_address_tracer(uint16_t address)
-// {
-//     uint16_t val = cpu.ram_at(address+1);
-//     val <<= 8;
-//     val = cpu.ram_at(address);
-//     return val;
-// }
+byte compute_operand_length_g23(byte bbb, byte opcode)
+{
+    if (opcode != 0x004C && opcode != 0x0060) // EXCLUDE THE JUMPS;
+    {
+        switch (bbb)
+        {
+        case 0x0: // #immediate: literally the next byte in memory
+        {
+            return 1;
+        }
+        case 0x1: // zero page: an adress in range 0x0000 - 0x0FFF
+        {
+            return 1;
+            break;
+        }
+        case 0x2: // accumulator. there is no address
+            return 1;
 
-// void TRACER::print_flags_group1()
-// {
-//     cout << "C: " << cpu.C << " O: " << cpu.O << " Z: " << cpu.Z << " N: " << cpu.N;
-// }
+        case 0x3: // absolute
+        {
+            return 2;
+            break;
+        }
+        case 0x4:
+        {
+            std::cerr << "INVALID OPCODE\n";
+            break;
+        }
+        case 0x5: // zero page, x
+        {         // STX, LDX use zero page, y not x
+            return 1;
+            break;
+        }
+        case 0x6:
+        {
+            std::cerr << "INVALID OPCODE\n";
+            break;
+        }
+        case 0x7: // absolute, x
+        {         // THIS could be more compact but i don't want to mess with the pagecross logic
+            return 2;
+        }
+        }
+    }
+    if (opcode == 0x004C || opcode == 0x006C)
+        return 2;
 
-// void TRACER::trace_instruction_group1(uint16_t address)
-// {
-//     // PCR STANDS FOR PAGE CROSS, booolean
-//     switch (cpu.inst.aaa)
-//     {
-//     case 0x0:
-//         printf("ORA - OR with accumulator. Cycles:%01lu. Flags: ", cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x1:
-//         printf("AND - A(%02d) and M(%02d). Cycles:%01lu. Flags: ", cpu.get_A(), cpu.ram_at(address), cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x2:
-//         printf("EOR - XOR with accumulator. Cycles:%01lu. Flags: ", cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x3:
-//         // ADC();
-//         printf("ADC - Add A + M with C. Cycles:%01lu. Flags: ", cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x4:
-//         // STA();
-//         printf("STA - Store A at M. Cycles:%01lu. Flags: ", cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x5:
-//         // LDA();
-//         printf("LDA - Load A(%02X) from M. Cycles:%01lu. Flags: ", cpu.get_A(), cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x6:
-//         // CMP();
-//         printf("CMP - CMP A(%02X) with M(%02X). Cycles:%01lu. Flags: ", cpu.get_A(), cpu.ram_at(address), cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x7:
-//         // SBC();
-//         printf("SBC - Sub A with M with borrow. Cycles:%01lu. Flags: ", cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     default:
-//         printf("Unimplemented opcode\n");
-//     }
-// }
+    return 0;
+}
 
-// void TRACER::trace_instruction_group2(uint16_t address, bool onaddress_group2)
-// {
-//     // TODO: could add results but unsure if worth it. flags are more significant here i think.
-//     switch (cpu.inst.aaa)
-//     {
-//     case 0x0:
-//         if (onaddress_group2)
-//         {
-//             printf("ASL - Shift left arithmetic. Value(%02X), Result(%02X), Cycles:%01lu, Flags: ", cpu.ram_at(address), (cpu.ram_at(address) << 1), cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         else
-//         {
-//             printf("ASL - Shift left arithmetic. A(%02X), Result(%02X), Cycles:%01lu, Flags: ", cpu.get_A(), cpu.get_A() << 1, cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         break;
-//     case 0x1:
-//         if (onaddress_group2)
-//         {
-//             printf("ROL - Rotate left. Value(%02X), Cycles:%01lu, Flags: ", cpu.ram_at(address), cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         else
-//         {
-//             printf("ROL - Rotate left. A(%02X), Cycles:%01lu, Flags: ", cpu.get_A(), cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         break;
-//     case 0x2:
-//         if (onaddress_group2)
-//         {
-//             printf("LSR - Logic shift right. Value(%02X), Cycles:%01lu, Flags: ", cpu.ram_at(address), cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         else
-//         {
-//             printf("LSR - Logic shift right. A(%02X), Cycles:%01lu, Flags: ", cpu.get_A(), cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         break;
-//     case 0x3:
-//         if (onaddress_group2)
-//         {
-//             printf("ROR - Rotate right. Value(%02X), Cycles:%01lu, Flags: ", cpu.ram_at(address), cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         else
-//         {
-//             printf("ROR - Rotate right. A(%02X), Cycles:%01lu, Flags: ", cpu.get_A(), cpu.get_cycles());
-//             print_flags_group1();
-//         }
-//         break;
-//     case 0x4:
-//         printf("STX - Store X at address. X(%02X), Cycles:%01lu, Flags: Not affected\n", cpu.get_X(), cpu.get_cycles());
-//         break;
-//     case 0x5:
-//         printf("LDX - Load X from address. X(%02X), Cycles:%01lu, Flags: ", cpu.get_X(), cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x6:
-//         printf("DEC - Decrement one. Value before(%02X), Cycles:%01lu, Flags: ", cpu.ram_at(address), cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x7:
-//         printf("INC - Increment one. Value before(%02X), Cycles:%01lu, Flags: ", cpu.ram_at(address), cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     }
-// }
+string compute_instruction_name_group2(byte aaa)
+{
+    switch (aaa)
+    {
+    case 0x0:
+        return "ASL";
+        break;
+    case 0x1:
+        return "ROL";
+        break;
+    case 0x2:
+        return "LSR";
+        break;
+    case 0x3:
+        return "ROR";
+        break;
+    case 0x4:
+        return "STX";
+        break;
+    case 0x5:
+        return "LDX";
+        break;
+    case 0x6:
+        return "DEC";
+        break;
+    case 0x7:
+        return "INC";
+        break;
+    }
+    return "";
+}
 
-// void TRACER::trace_instruction_group3(uint16_t address)
-// {
-//     switch (cpu.inst.aaa)
-//     {
-//     case 0x0:
-//         // printf("INVALID OPCODE \n");
-//         break;
-//     case 0x1:
-//         printf("AND Test - A(%02X), Value(%02X), Cycles:%01lu, Flags: ", cpu.get_A(), cpu.ram_at(address), cpu.get_cycles());
-//         print_flags_group1();
-//         break;
-//     case 0x2:
-//         printf("JMP(Absolut) to (%04X). Cycles:%01lu, Flags: not affected\n", address, cpu.get_cycles());
-//         break;
-//     case 0x3:
-//         printf("JMP(Indirect) to (%04X). Cycles:%01lu, Flags: not affected\n", read_address_tracer(address), cpu.get_cycles());
-//         break;
-//     case 0x4:
-//         // STY
-//         break;
-//     case 0x5:
-//         // LDY
-//         break;
-//     case 0x6:
-//         // CPY
-//         break;
-//     case 0x7:
-//         // CPX
-//         break;
-//     }
-// }
+string compute_instruction_name_group3(byte aaa, string &observations)
+{
+    uint16_t jump_address = 0;
+    switch (aaa)
+    {
+    case 0x0:
+        return "INVALID OPCODE";
+        break;
+    case 0x1:
+        return "BIT";
+        break;
+    case 0x2:
+        observations = "JMPabs";
+        return "JMP";
+        break;
+    case 0x3:
+        observations = "JMPind";
+        return "JMP";
+        break;
+    case 0x4:
+        return "STY";
+        break;
+    case 0x5:
+        return "LDY";
+        break;
+    case 0x6:
+        return "CPY";
+        break;
+    case 0x7:
+        return "CPX";
+        ;
+        break;
+    }
+    return "";
+}
 
-// void TRACER::tracer(uint16_t address, bool page_cross, uint16_t original_pc,bool onaddress_group2)
-// {
-//     // ADDRESSING MODES AT https://llx.com/Neil/a2/opcodes.html
-//     //printf("Address: %04X, Opcode: %02X, Instruction: ", PC, cpu.inst.opcode);
-//     cout << cpu.get_pc() << " " <<  cpu.get_inst_opcode();
-//     byte low_nibble = cpu.get_inst_opcode() & 0x0F;
-//     byte high_nibble = cpu.get_inst_opcode() >> 4;
-//     if (low_nibble == 0x08)
-//     {
-//         // Single byte instruction type 1
-//         // run_insturction_sb1(cpu);
-//     }
-//     if (low_nibble == 0x0A && high_nibble >= 0x08)
-//     {
-//         // Single byte instruction type 2
-//         // run_instruction_sb2(cpu);
-//     }
-//     switch (cpu.inst.cc)
-//     {
-//     case 0x01: // cc = 01
-//         trace_instruction_group1(address);
-//         break;
+void TRACER::tracer(uint16_t PC, byte FLAGS)
+{
+    // ADDRESSING MODES AT https://llx.com/Neil/a2/opcodes.html
+    // LOG: Address, OPCODE, INST, A:, X:, Y:, P:, SP:
+    // cout << std::hex << cpu.get_pc() << " " <<  cpu.get_inst_opcode();
+    
+    string observations = "";
+    Instruction inst;
+    inst.opcode = cpu.ram_at(PC);
+    inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
+    inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
+    inst.cc = (0x03 & inst.opcode);            // last 2 bits
+    inst.xx = (0b11000000 & inst.opcode) >> 6; // first 2 bits(xx)
+    inst.y = (0b00100000 & inst.opcode) >> 5;  // third bit from the left;
+    byte last_5_bits = (0b00011111 & inst.opcode);
+    byte low_nibble = inst.opcode & 0x0F;
+    byte high_nibble = inst.opcode >> 4;
+    uint16_t address = 0;
 
-//     case 0x02:
-//         trace_instruction_group2(address, onaddress_group2);
-//         // printf("Unimplemented opcode\n");
-//         //  address = decode_addrmode_g2(cpu);
-//         //  run_insturction_group2(address, cpu);
-//         break;
+    std::string instruction_name = "UNKNOWN";
 
-//     case 0x0:
-//         trace_instruction_group3(address);
-//         break;
-//     default:
-//         cout << "Unimplemented opcode\n";
-//         break;
-//     }
-// }
+    byte instruction_length = 1; // IT CAN BE 1, 2, 3 AT MOST
+    bool branch_instruction = false;
+    if (low_nibble == 0x00 && last_5_bits == 0b00010000)
+    {
+        branch_instruction = true;
+        instruction_length = 2;
+        // here we have branching
+        int8_t branch_position = (int8_t)cpu.ram_at(PC + 1);
+        bool branch_succeded = false;
+        bool page_cross = false;
+        uint16_t aux_pc = PC;
+        if (inst.xx == 0b00)
+        {
+            if (cpu.N == inst.y)
+            {
+                branch_succeded = true;
+            }
+            instruction_name = (inst.y == 0) ? "BPL" : "BMI";
+        }
+        else if (inst.xx == 0b01)
+        {
+            if (cpu.O == inst.y)
+            {
+                branch_succeded = true;
+            }
+            instruction_name = (inst.y == 0) ? "BVC" : "BVS";
+        }
+        else if (inst.xx == 0b10)
+        {
+            if (cpu.C == inst.y)
+            {
+                branch_succeded = true;
+            }
+            instruction_name = (inst.y == 0) ? "BCC" : "BCS";
+        }
+        else if (inst.xx == 0b11)
+        {
+            if (cpu.Z == inst.y)
+            {
+                branch_succeded = true;
+            }
+            instruction_name = (inst.y == 0) ? "BNE" : "BEQ";
+        }
+        // if (branch_succeded)
+        // {
+        //     PC += branch_position;
+        // }
+    }
+
+    else if (inst.opcode == 0x00)
+    {
+        instruction_name = "BRK";
+        instruction_length = 1;
+    }
+    else if (inst.opcode == 0x20)
+    {
+        // TODO CHECK THIS: the address on the stack points to the last byte of jump instruction or so im told
+        instruction_name = "JSR";
+        instruction_length = 1;
+    }
+    else if (inst.opcode == 0x40)
+    {
+        instruction_name = "RTI";
+        instruction_length = 1;
+    }
+    else if (inst.opcode == 0x60)
+    {
+        instruction_name = "RTS";
+        instruction_length = 1;
+    }
+    // for single byte instructions !
+    else if (low_nibble == 0x08)
+    {
+        instruction_length = 1;
+        switch (inst.opcode)
+        {
+        case 0x08:
+            instruction_name = "PHP";
+            break;
+        case 0x28:
+            instruction_name = "PLP";
+            break;
+        case 0x48:
+            instruction_name = "PHA";
+            break;
+        case 0x68:
+            instruction_name = "PLA";
+            break;
+        case 0x88:
+            instruction_name = "DEY";
+            break;
+        case 0xA8:
+            instruction_name = "TAY";
+            break;
+        case 0xC8:
+            instruction_name = "INY";
+            break;
+        case 0xE8:
+            instruction_name = "INX";
+            break;
+        case 0x18:
+            instruction_name = "CLC";
+            break;
+        case 0x38:
+            instruction_name = "SEC";
+            break;
+        case 0x58:
+            instruction_name = "CLI";
+            break;
+        case 0x78:
+            instruction_name = "SEI";
+            break;
+        case 0x98:
+            instruction_name = "TYA";
+            break;
+        case 0xB8:
+            instruction_name = "CLV";
+            break;
+        case 0xD8:
+            instruction_name = "CLD";
+            break;
+        case 0xF8:
+            instruction_name = "SED";
+            break;
+        default:
+            std::cerr << "ILLEGAL";
+        }
+    }
+    else if (low_nibble == 0x0A && high_nibble >= 0x08)
+    {
+        instruction_length = 1;
+        switch (inst.opcode)
+        {
+        case 0x8a:
+            instruction_name = "TXA";
+            break;
+        case 0x9A:
+            instruction_name = "TXS";
+            break;
+        case 0xAA:
+            instruction_name = "TAX";
+            break;
+        case 0xBA:
+            instruction_name = "TSX";
+            break;
+        case 0xCA:
+            instruction_name = "DEX";
+            break;
+        case 0xEA:
+            instruction_name = "NOP";
+            break;
+        default:
+            break;
+        }
+    }
+    else
+        switch (inst.cc)
+        {
+        // compute_addr_mode DOES return an address via reffrence(&)
+        case 0x01: // cc = 1
+            instruction_length += compute_operand_length_g1(inst.bbb);
+            instruction_name = compute_instruction_name_group1(inst.aaa);
+            break;
+        case 0x02: // cc = 10
+            // Will return address via pointer, the function returns a boolean.
+            instruction_length += compute_operand_length_g23(inst.bbb, inst.opcode);
+            instruction_name = compute_instruction_name_group2(inst.aaa);
+            break;
+        case 0x0: // cc = 00
+            instruction_length += compute_operand_length_g23(inst.bbb, inst.opcode);
+            instruction_name = compute_instruction_name_group3(inst.aaa, observations);
+            break;
+        }
+
+    cout << std::hex << PC << " ";
+    std::stringstream ss;
+    ss << std::uppercase << std::hex << PC;
+
+    string address_string = ss.str();
+    if (instruction_length == 1)
+    {
+        cout << std::hex << std::uppercase
+                   << (int)cpu.ram_at(PC) << std::setw(7) << std::setfill(' ');
+    }
+    else if (instruction_length == 2)
+    {
+        cout << std::hex << std::uppercase
+                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
+                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1)
+                  << std::setw(4) << std::setfill(' ');
+    }
+    else if (instruction_length == 3)
+    {
+        cout << std::hex << std::uppercase
+                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
+                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1) << " "
+                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 2);
+    }
+    cout << " ";
+    cout << instruction_name << " ";
+    cout << std::hex << std::uppercase << "A:" << std::setw(2) << (int)cpu.get_A() << " X:" 
+         << std::setw(2) << (int)cpu.get_X() << " Y:" << std::setw(2) << (int)cpu.get_Y() << " P:"
+         << std::setw(2) << (int)FLAGS << " SP:" << (int)cpu.get_SP();
+    if(!logs)
+    {
+        cout << "could not open correct log file";
+    }
+
+    
+
+    string log_entry;
+    getline(logs, log_entry);
+    int flag_pos = log_entry.find("P:");
+    string log_address = log_entry.substr(0, log_entry.find(" "));
+    if(flag_pos == string::npos)
+    {
+        cout << "Invalid log entry" << '\n';
+        return;
+    }
+    flag_pos += 2;
+    string p_value_str = log_entry.substr(flag_pos, 2);
+    int p_value;
+    std::stringstream(p_value_str) >> std::hex >> p_value;
+    
+    if(log_address.compare(address_string))
+    {
+        cout << " address problem here!";
+    }
+    if(p_value != FLAGS)
+    {
+        cout << " flag problem here!";
+    }
+
+    cout << '\n';
+    int t = 0;
+}

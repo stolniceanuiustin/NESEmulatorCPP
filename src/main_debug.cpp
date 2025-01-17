@@ -45,20 +45,36 @@ int main(int argc, char *argv[])
     //     return -1;
     // }
 
-    // Config config = Config(argv[1]);
+    //Config config = Config(argv[1]);
     Config config = Config("../roms/nestest.nes");
     config.code_segment = 0xC000;
-    if(!cpu.init(config))
+
+    // Config config = Config("../roms/6502_functional_test.bin");
+    // config.code_segment = 0x0400;
+    if(!cpu.init(config, true))
     {
         return -1;
     }
     int t = 0;
 
-    while(true)
+    bool run = true;
+    while(run)
     {
-        cpu.execute();
-        usleep(0.558659218);
+        for(int i=0; i<1000; i++)
+        {
+            cpu.execute();
+            usleep(0.558659218);
+        }
+        run = false;
+    FILE *hexdumpfile = fopen("hexdump", "wb");
+    if (!hexdumpfile)
+    {
+        return false;
     }
+    fwrite(cpu.ram, sizeof(byte), 0xFFFF, hexdumpfile);
+    }
+
+    
 
     // SDL_DestroyRenderer(renderer);
     // SDL_DestroyWindow(window);

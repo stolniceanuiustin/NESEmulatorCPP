@@ -1,10 +1,13 @@
 #include "cpu_header.h"
+#include "tracer.h"
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstdint>
 #include <cstring>
+#define DEBUG
+
 using std::cout;
 
 const uint16_t null_address = 0;
@@ -16,15 +19,34 @@ const uint16_t null_address = 0;
 
 void CPU::push(byte x)
 {
-    //Stack overflow should handle itself
-    ram[0x0100 + SP] = x;
+    // Stack overflow should handle itself
     SP--;
+    ram[0x0100 + SP] = x;
+}
+
+
+//TODO : CHECK ALL STACK OPERATIONS ALL OF THEM MIGHT BE WRONG(BUT MAYBE NOT)!!
+
+void CPU::push_address(uint16_t address)
+{
+    SP--;
+    ram[0x0100 + SP] = address & 0x00FF;
+    SP--;
+    ram[0x0100 + SP] = (address & 0xFF00) >> 8;
 }
 
 byte CPU::pop()
 {
     byte to_return = ram[0x0100 + SP];
     SP++;
+    return to_return;
+}
+uint16_t CPU::pop_address()
+{
+    byte high_byte = pop();
+    byte low_byte = pop();
+    uint16_t to_return = (uint16_t)high_byte << 8;
+    to_return |= low_byte;
     return to_return;
 }
 
@@ -65,7 +87,7 @@ bool CPU::reset()
     A = 0;
     X = 0;
     Y = 0;
-    SP = 0xFF; //it decreases with pushing 
+    SP = 0xFD; // it decreases with pushing
     PC = 0;
     C = 0; // carry
     Z = 0; // zero
@@ -180,109 +202,133 @@ void CPU::run_instruction_group3(uint16_t address, bool page_cross)
 
 void CPU::run_instruction_group_sb1()
 {
-    if(inst.opcode == 0x08)
-            PHP();
-        if(inst.opcode == 0x28)
-            PLP();
-        if(inst.opcode == 0x48)
-            PHA();
-        if(inst.opcode == 0x68)
-            PLA();
-        if(inst.opcode == 0x88)
-            DEY();
-        if(inst.opcode == 0xA8)
-            TAY();
-        if(inst.opcode == 0xC8)
-            INY();
-        if(inst.opcode == 0xE8)
-            INX();
-        if(inst.opcode ==0x18)
-            CLC();
-        if(inst.opcode == 0x38)
-            SEC();
-        if(inst.opcode == 0x58)
-            CLI();
-        if(inst.opcode == 0x78)
-            SEI();
-        if(inst.opcode == 0x98)
-            TYA();
-        if(inst.opcode == 0xB8)
-            CLV();
-        if(inst.opcode == 0xD8)
-            CLD();
-        if(inst.opcode == 0xF8)
-            SED();
+    switch (inst.opcode)
+    {
+    case 0x08:
+        PHP();
+        break;
+    case 0x28:
+        PLP();
+        break;
+    case 0x48:
+        PHA();
+        break;
+    case 0x68:
+        PLA();
+        break;
+    case 0x88:
+        DEY();
+        break;
+    case 0xA8:
+        TAY();
+        break;
+    case 0xC8:
+        INY();
+        break;
+    case 0xE8:
+        INX();
+        break;
+    case 0x18:
+        CLC();
+        break;
+    case 0x38:
+        SEC();
+        break;
+    case 0x58:
+        CLI();
+        break;
+    case 0x78:
+        SEI();
+        break;
+    case 0x98:
+        TYA();
+        break;
+    case 0xB8:
+        CLV();
+        break;
+    case 0xD8:
+        CLD();
+        break;
+    case 0xF8:
+        SED();
+        break;
+    default:
+        std::cerr << "ILLEGAL";
+    }
 }
 
 void CPU::run_instruction_group_sb2()
 {
     switch (inst.opcode)
     {
-        case 0x8a:
-            TXA();
-            break;
-        case 0x9A:
-            TXS();
-            break;
-        case 0xAA:
-            TAX();
-            break;
-        case 0xBA:
-            TSX();
-            break;
-        case 0xCA:
-            DEX();
-            break;
-        case 0xEA:
-            NOP();
-            break;
-        default:
-            break;
+    case 0x8a:
+        TXA();
+        break;
+    case 0x9A:
+        TXS();
+        break;
+    case 0xAA:
+        TAX();
+        break;
+    case 0xBA:
+        TSX();
+        break;
+    case 0xCA:
+        DEX();
+        break;
+    case 0xEA:
+        NOP();
+        break;
+    default:
+        break;
     }
 }
 
-bool CPU::init(Config config)
+bool CPU::init(Config config, bool NES)
 {
     std::ifstream rom(config.rom_name, std::ios::binary);
-    if(!rom)
+    if (!rom)
     {
         std::cerr << "Could not open ROM FILE\n";
         return false;
     }
-    NESHeader header;
-    rom.read(reinterpret_cast<char*>(&header), sizeof(header));
-    if (header.magic[0] != 'N' || header.magic[1] != 'E' || header.magic[2] != 'S' || header.magic[3] != 0x1A) {
-        std::cerr << "Invalid NES file: Missing iNES header.\n";
-        return 1;
-    }
-
-    int prg_size = header.prg_size * 16 * 1024;
-    int chr_size = header.chr_size * 8 * 1024;
-
-    rom.read(reinterpret_cast<char*>(&ram[0x8000]), prg_size);
-    rom.close();
-
-    FILE* hexdumpfile = fopen("hexdump", "wb");
-    if(!hexdumpfile)
+    if (NES)
     {
-        return false;
+        NESHeader header;
+        rom.read(reinterpret_cast<char *>(&header), sizeof(header));
+        if (header.magic[0] != 'N' || header.magic[1] != 'E' || header.magic[2] != 'S' || header.magic[3] != 0x1A)
+        {
+            std::cerr << "Invalid NES file: Missing iNES header.\n";
+            return 1;
+        }
+
+        int prg_size = header.prg_size * 16 * 1024;
+        int chr_size = header.chr_size * 8 * 1024;
+
+        rom.read(reinterpret_cast<char *>(&ram[0x8000]), prg_size);
+        rom.close();
+        if (prg_size == 0x4000)
+        {
+            std::memcpy(&ram[0xC000], &ram[0x8000], 0x4000);
+        }
+    }
+    else 
+    {
+        rom.read(reinterpret_cast<char*>(&ram[0x0000]), 0xFFFF);
+        rom.close();
     }
     
-    if(prg_size == 0x4000)
-    {
-        std::memcpy(&ram[0xC000], &ram[0x8000], 0x4000);
-    }
-    fwrite(ram, sizeof(byte), 0xFFFF, hexdumpfile);
     PC = config.code_segment;
     return true;
 }
 
-//RUNS ONE OPCODE
+// RUNS ONE OPCODE
 int CPU::execute()
 {
-    //TODO ADD ELSE IFS!
+    // TODO ADD ELSE IFS!
     bool onaddress_group2 = false;
     uint16_t original_pc = PC;
+    byte original_flags = pack_flags();
     bool page_cross = false;
 
     if (original_pc == 0xFFFF)
@@ -292,7 +338,8 @@ int CPU::execute()
         return -1;
     }
     inst.opcode = read_pc();
-    //PC += 1; READ PC ALREADY DOES INCREMENT PC BY ONE!
+    if(original_pc == 0xC754)
+        int t = 0;
     inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
     inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
     inst.cc = (0x03 & inst.opcode);            // last 2 bits
@@ -301,10 +348,8 @@ int CPU::execute()
     byte last_5_bits = (0b00011111 & inst.opcode);
     byte low_nibble = inst.opcode & 0x0F;
     byte high_nibble = inst.opcode >> 4;
-    uint16_t address = 0; // Offset of ram. no longer doing pointer arithmetic
-    
-    cout << "Running opcode: " << std::hex << (int)inst.opcode << "\n";
-    
+    uint16_t address = 0;
+
     if (low_nibble == 0x00 && last_5_bits == 0b00010000)
     {
         // here we have branching
@@ -320,7 +365,7 @@ int CPU::execute()
             branch_succeded = true;
         else if (inst.xx == 0b11 && Z == inst.y)
             branch_succeded = true;
-        
+
         if (branch_succeded)
         {
             PC += branch_position;
@@ -329,27 +374,27 @@ int CPU::execute()
         }
         cycles += 2 + (int)branch_succeded + 2 * (int)page_cross;
     }
-    
-    else if(inst.opcode == 0x00)
+
+    else if (inst.opcode == 0x00)
     {
         BRK();
         // brk = forced interrupt.
         // will handle interupts later, for now i have to do the single byte instrucftions !
     }
-    else if(inst.opcode == 0x20)
+    else if (inst.opcode == 0x20)
     {
-        //TODO CHECK THIS: the address on the stack points to the last byte of jump instruction or so im told
+        // TODO CHECK THIS: the address on the stack points to the last byte of jump instruction or so im told
         address = read_abs_address(PC);
         PC += 1;
         JSR_abs(address);
     }
-    else if(inst.opcode == 0x40)
+    else if (inst.opcode == 0x40)
     {
-        //RTI() //return from interrupt;
+        // RTI() //return from interrupt;
     }
-    else if(inst.opcode == 0x60)
+    else if (inst.opcode == 0x60)
     {
-        RTS();//return from subroutine;
+        RTS(); // return from subroutine;
     }
     // for single byte instructions !
     else if (low_nibble == 0x08)
@@ -360,29 +405,30 @@ int CPU::execute()
     {
         run_instruction_group_sb2();
     }
-    else switch (inst.cc)
-    {
-    // compute_addr_mode DOES return an address via reffrence(&)
-    case 0x01: // cc = 1
-        address = compute_addr_mode_g1(page_cross);
-        run_instruction_group1(address, page_cross);
-        break;
-    case 0x02: // cc = 10
-        // Will return address via pointer, the function returns a boolean.
-        onaddress_group2 = compute_addr_mode_g23(page_cross, address);
-        if (onaddress_group2 == true)
-            run_instruction_group2(address, page_cross, 0); // Not accumulator, on address
-        else
-            run_instruction_group2(null_address, page_cross, 1); // On accumulator
-        break;
-    case 0x0: // cc = 00
-        compute_addr_mode_g23(page_cross, address);
-        run_instruction_group3(address, page_cross);
-        break;
-    }
+    else
+        switch (inst.cc)
+        {
+        // compute_addr_mode DOES return an address via reffrence(&)
+        case 0x01: // cc = 1
+            address = compute_addr_mode_g1(page_cross);
+            run_instruction_group1(address, page_cross);
+            break;
+        case 0x02: // cc = 10
+            // Will return address via pointer, the function returns a boolean.
+            onaddress_group2 = compute_addr_mode_g23(page_cross, address);
+            if (onaddress_group2 == true)
+                run_instruction_group2(address, page_cross, 0); // Not accumulator, on address
+            else
+                run_instruction_group2(null_address, page_cross, 1); // On accumulator
+            break;
+        case 0x0: // cc = 00
+            compute_addr_mode_g23(page_cross, address);
+            run_instruction_group3(address, page_cross);
+            break;
+        }
 
     // TODO: check if this is the correct way to call tracer
-    // TRACER my_tracer(*this);
-    // my_tracer.tracer(offset_address, page_cross, original_pc, onaddress_group2);
+    TRACER my_tracer(*this);
+    my_tracer.tracer(original_pc, original_flags);
     return 1;
 }

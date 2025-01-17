@@ -16,11 +16,12 @@ byte CPU::pack_flags()
 
 }
 
+
 void CPU::unpack_flags(byte flags)
 {
     N = ((1 << 7) & flags) >> 7;
     O = ((1 << 6) & flags) >> 6;
-    B = ((1 << 4) & flags) >> 4;
+    B = 0;                      //break flag shouldnt change when loded with PLP
     D = ((1 << 3) & flags) >> 3;
     I = ((1 << 2) & flags) >> 2;
     Z = ((1 << 1) & flags) >> 1;
@@ -52,6 +53,7 @@ void CPU::PHA()
 void CPU::PLA()
 {
     A = pop();
+    set_ZN(A);
     cycles += 4;
 }
 
