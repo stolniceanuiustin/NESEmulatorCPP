@@ -62,6 +62,10 @@ int main(int argc, char *argv[])
     {
         for(int i=0; i<1000; i++)
         {
+            if(i == 847)
+            {
+                int x = 0;
+            }
             cpu.execute();
             usleep(0.558659218);
         }

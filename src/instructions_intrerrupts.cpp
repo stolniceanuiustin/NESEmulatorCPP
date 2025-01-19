@@ -33,10 +33,19 @@ void CPU::trigger_irq()
     if(I == 0) //interrupts enabled
     {
         SP = 0xFF;
-        push((PC & 0xFF00) >> 8);
-        push((PC & 0x00FF));
+        push_address(PC);
+        // push((PC & 0xFF00) >> 8);
+        // push((PC & 0x00FF));
         push(pack_flags());
         PC = read_abs_address(IRQ_vector);
         I = 1;
     }
+}
+
+void CPU::RTI()
+{
+    byte flags = pop();
+    unpack_flags(flags);
+    PC = pop_address();
+    cycles += 6;
 }

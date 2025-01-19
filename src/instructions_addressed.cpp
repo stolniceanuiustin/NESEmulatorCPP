@@ -22,7 +22,8 @@ void CPU::ORA(uint16_t address, bool page_cross)
 void CPU::AND(uint16_t address, bool page_cross)
 {
     const int lookup[] = {6, 3, 2, 4, 5, 4, 4, 4};
-    A = A & ram[address];
+    byte operand = ram[address];
+    A = A & operand;
     set_ZN(A);
 
     cycles += lookup[inst.bbb] + (int)page_cross;
@@ -43,11 +44,13 @@ void CPU::ADC(uint16_t address, bool page_cross)
     const int lookup[] = {6, 3, 2, 4, 5, 4, 4, 4};
     byte operand = ram[address];
     uint16_t result = (uint16_t)A + (uint16_t)(operand) + (uint16_t)(C);     //Accumulator + address + carry
-    //bool overflow_check = (~(A ^ operand) & (A ^ result) & 0x80) != 0;
-    //bool overflow_check = (A ^ result) & (operand ^ result) & 0x80 != 0;
-    bool overflow_check = (A ^ result) & (operand ^ result) & 0x80;
+    //OLD IMPLEMENTATION:
+    //bool overflow_check = (A ^ result) & (operand ^ result) & 0x80;
     C = result > 0x00FF ? 1 : 0;    //if more than 1 byte => carry
-    O = overflow_check ? 1 : 0;
+    //O = overflow_check ? 1 : 0;
+    //A = (byte)(result & 0x00FF);
+    bool overflow = ~(A ^ operand) & (A ^ result) & 0x80;
+    O = overflow ? 1 : 0;
     A = (byte)(result & 0x00FF);
     set_ZN(A);
 
@@ -87,12 +90,15 @@ void CPU::CMP(uint16_t address, bool page_cross)
 
 void CPU::SBC(uint16_t address, bool page_cross)
 {
+    // TODO: TEST THIS
     const int lookup[] = {6, 3, 2, 4, 5, 4, 4, 4};
     byte operand = ram[address];
-    uint16_t result = (uint16_t)A + (uint16_t)(255 - operand) + (uint16_t)(1-C);     //Accumulator + address + 1-carry(borrow)
-    bool overflow_check = (A ^ result) & ((255-operand) ^ result) & 0x80;
-    C = result > 0x00FF ? 0 : 1;    //Borrow is inverted carry
-    O = overflow_check ? 1 : 0;     //I dont really understand the logic. there is an article about this
+    operand = ~operand; 
+    uint16_t result = (uint16_t)A + (uint16_t)(operand) + (uint16_t)(C);     //Accumulator + address + carry
+    
+    C = result > 0x00FF ? 1 : 0;    //if more than 1 byte => carry
+    bool overflow = ~(A ^ operand) & (A ^ result) & 0x80;
+    O = overflow ? 1 : 0;
     A = (byte)(result & 0x00FF);
     set_ZN(A);
 
@@ -323,11 +329,11 @@ void CPU::CPX(uint16_t address)
 {
     //TODO FIX THIS THE SAME AS CPY
     int lookup[] = {2, 3, -1, 4, -1, -1, -1, -1};
-    byte result = X - ram[address];
-    set_ZN(result);
-    if (result >= 0)
-        C = 1;
-    else
-        C = 0;
+    byte operand = ram[address];  
+    byte result_byte = X - operand;
+    C = X >= operand ? 1 : 0;
+    set_ZN(result_byte);
+    
+
     cycles += lookup[inst.bbb];
 }

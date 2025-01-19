@@ -144,7 +144,7 @@ void CPU::TXA()
 
 void CPU::TXS()
 {
-    unpack_flags(X);
+    SP = X;
     cycles =+ 2;
 }
 
@@ -157,8 +157,7 @@ void CPU::TAX()
 
 void CPU::TSX()
 {
-    //TODO CHECK THYIS
-    X = pack_flags();
+    X = SP;
     set_ZN(X);
     cycles += 2;
 }

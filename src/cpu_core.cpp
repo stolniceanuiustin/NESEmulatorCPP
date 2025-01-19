@@ -20,8 +20,8 @@ const uint16_t null_address = 0;
 void CPU::push(byte x)
 {
     // Stack overflow should handle itself
-    SP--;
     ram[0x0100 + SP] = x;
+    SP--;
 }
 
 
@@ -29,22 +29,25 @@ void CPU::push(byte x)
 
 void CPU::push_address(uint16_t address)
 {
+    ram[0x0100 + SP] = (address & 0xFF00) >> 8;
     SP--;
+
     ram[0x0100 + SP] = address & 0x00FF;
     SP--;
-    ram[0x0100 + SP] = (address & 0xFF00) >> 8;
+    
+    
 }
 
 byte CPU::pop()
 {
-    byte to_return = ram[0x0100 + SP];
     SP++;
+    byte to_return = ram[0x0100 + SP];
     return to_return;
 }
 uint16_t CPU::pop_address()
 {
-    byte high_byte = pop();
     byte low_byte = pop();
+    byte high_byte = pop();
     uint16_t to_return = (uint16_t)high_byte << 8;
     to_return |= low_byte;
     return to_return;
@@ -294,6 +297,8 @@ bool CPU::init(Config config, bool NES)
     }
     if (NES)
     {
+        SP = 0xFD;
+        std::memset(ram, 0, sizeof(ram));
         NESHeader header;
         rom.read(reinterpret_cast<char *>(&header), sizeof(header));
         if (header.magic[0] != 'N' || header.magic[1] != 'E' || header.magic[2] != 'S' || header.magic[3] != 0x1A)
@@ -329,6 +334,10 @@ int CPU::execute()
     bool onaddress_group2 = false;
     uint16_t original_pc = PC;
     byte original_flags = pack_flags();
+    byte original_A = A;
+    byte original_Y = Y;
+    byte original_X = X;
+    byte original_SP = SP;
     bool page_cross = false;
 
     if (original_pc == 0xFFFF)
@@ -390,7 +399,7 @@ int CPU::execute()
     }
     else if (inst.opcode == 0x40)
     {
-        // RTI() //return from interrupt;
+        RTI();
     }
     else if (inst.opcode == 0x60)
     {
@@ -429,6 +438,6 @@ int CPU::execute()
 
     // TODO: check if this is the correct way to call tracer
     TRACER my_tracer(*this);
-    my_tracer.tracer(original_pc, original_flags);
+    my_tracer.tracer(original_pc, original_flags, original_A, original_X, original_Y, original_SP);
     return 1;
 }

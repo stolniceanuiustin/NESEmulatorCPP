@@ -107,7 +107,8 @@ public:
 	bool compute_addr_mode_g23(bool &page_cross, uint16_t &address_to_return);
 	
 	void JSR_abs(uint16_t address);
-	void RTS();
+	void RTS();	
+	void RTI();
 
 	// First group of instructions
 	void set_ZN(byte value);

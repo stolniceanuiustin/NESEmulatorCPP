@@ -12,6 +12,25 @@ using std::getline;
 
 std::ifstream logs("nestest.log");
 
+int get_string_value(string x, string entry)
+{
+    int value;
+    int pos = entry.find(x);
+    if(pos == string::npos)
+    {
+        cout << "Invalid log entry" << '\n';
+        return -1;
+    }
+    if(!x.compare("SP:"))
+    {
+        pos += 3;
+    }
+    else pos += 2;
+    string value_str = entry.substr(pos, 2);
+    std::stringstream(value_str) >> std::hex >> value;
+    return value;
+
+}
 // retruns length of operand!
 byte compute_operand_length_g1(byte bbb)
 {
@@ -211,7 +230,7 @@ string compute_instruction_name_group3(byte aaa, string &observations)
     return "";
 }
 
-void TRACER::tracer(uint16_t PC, byte FLAGS)
+void TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP)
 {
     // ADDRESSING MODES AT https://llx.com/Neil/a2/opcodes.html
     // LOG: Address, OPCODE, INST, A:, X:, Y:, P:, SP:
@@ -432,9 +451,9 @@ void TRACER::tracer(uint16_t PC, byte FLAGS)
     }
     cout << " ";
     cout << instruction_name << " ";
-    cout << std::hex << std::uppercase << "A:" << std::setw(2) << (int)cpu.get_A() << " X:" 
-         << std::setw(2) << (int)cpu.get_X() << " Y:" << std::setw(2) << (int)cpu.get_Y() << " P:"
-         << std::setw(2) << (int)FLAGS << " SP:" << (int)cpu.get_SP();
+    cout << std::hex << std::uppercase << "A:" << std::setw(2) << (int)A << " X:" 
+         << std::setw(2) << (int)X << " Y:" << std::setw(2) << (int)Y << " P:"
+         << std::setw(2) << (int)FLAGS << " SP:" << (int)cpu.get_SP() << " ";
     if(!logs)
     {
         cout << "could not open correct log file";
@@ -444,18 +463,15 @@ void TRACER::tracer(uint16_t PC, byte FLAGS)
 
     string log_entry;
     getline(logs, log_entry);
-    int flag_pos = log_entry.find("P:");
-    string log_address = log_entry.substr(0, log_entry.find(" "));
-    if(flag_pos == string::npos)
-    {
-        cout << "Invalid log entry" << '\n';
-        return;
-    }
-    flag_pos += 2;
-    string p_value_str = log_entry.substr(flag_pos, 2);
-    int p_value;
-    std::stringstream(p_value_str) >> std::hex >> p_value;
     
+    string log_address = log_entry.substr(0, log_entry.find(" "));
+
+
+    int a_value = get_string_value("A:", log_entry);
+    int x_value = get_string_value("X:", log_entry);
+    int y_value = get_string_value("Y:", log_entry);
+    int p_value = get_string_value("P:", log_entry);    
+    int sp_value = get_string_value("SP:", log_entry);
     if(log_address.compare(address_string))
     {
         cout << " address problem here!";
@@ -464,7 +480,22 @@ void TRACER::tracer(uint16_t PC, byte FLAGS)
     {
         cout << " flag problem here!";
     }
-
+    if(a_value != A)
+    {
+        cout << "A problem here!";
+    }
+    if(x_value != X)
+    {
+        cout << "X problem here!";
+    }
+    if(y_value != Y)
+    {
+        cout << "Y problem here!";
+    }
+    if(sp_value != SP)
+    {
+        cout << "SP problem herE!";
+    }
     cout << '\n';
     int t = 0;
 }
