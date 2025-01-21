@@ -45,10 +45,9 @@ int main(int argc, char *argv[])
     //     return -1;
     // }
 
-    //Config config = Config(argv[1]);
+   // Config config = Config(argv[1]);
     Config config = Config("../roms/nestest.nes");
     config.code_segment = 0xC000;
-
     // Config config = Config("../roms/6502_functional_test.bin");
     // config.code_segment = 0x0400;
     if(!cpu.init(config, true))
@@ -56,13 +55,13 @@ int main(int argc, char *argv[])
         return -1;
     }
     int t = 0;
-
+    cpu.cycles += 7;
     bool run = true;
     while(run)
     {
-        for(int i=0; i<1000; i++)
+        for(int i=0; i<6000; i++)
         {
-            if(i == 847)
+            if(i == 4908)
             {
                 int x = 0;
             }

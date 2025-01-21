@@ -145,7 +145,7 @@ void CPU::TXA()
 void CPU::TXS()
 {
     SP = X;
-    cycles =+ 2;
+    cycles += 2;
 }
 
 void CPU::TAX()

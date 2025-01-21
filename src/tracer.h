@@ -10,7 +10,7 @@ public:
 	TRACER(CPU& cpu_pointer) : cpu(cpu_pointer)
 	{
 	}
-	void tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP);
+	void tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP, int cycles);
 	void print_flags_group1();
 	void trace_instruction_group3(uint16_t address);
 	void trace_instruction_group2(uint16_t address);

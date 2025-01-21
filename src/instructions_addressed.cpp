@@ -294,7 +294,13 @@ void CPU::JMP_abs(uint16_t jump_address)
 void CPU::JMP_indirect(uint16_t jump_address)
 {
     // TODO: ADDRESS BUG FROM ORIGINAL 6502(not a bug in my code)
-    PC = read_abs_address(jump_address);
+    //PC = read_abs_address(jump_address);
+    uint16_t aux_address = 0;
+    byte low_byte = ram[jump_address];
+    uint16_t high_byte_of_addr = jump_address & 0xFF00;
+    byte high_byte = ram[((jump_address + 1) & 0x00FF) | high_byte_of_addr];
+    aux_address = (high_byte << 8) | low_byte;
+    PC = aux_address;
     cycles += 5;
 }
 

@@ -174,7 +174,7 @@ void CPU::run_instruction_group3(uint16_t address, bool page_cross)
     switch (inst.aaa)
     {
     case 0x0:
-        printf("INVALID OPCODE \n");
+        //printf("INVALID OPCODE \n");
         break;
     case 0x1:
         BIT(address);
@@ -327,6 +327,11 @@ bool CPU::init(Config config, bool NES)
     return true;
 }
 
+//TODO : IMPLEMENT UNOFFICIAL OPCODES:
+//https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
+//SOME CAN EVEN CROSS PAGES :))))))))))))))
+
+
 // RUNS ONE OPCODE
 int CPU::execute()
 {
@@ -339,7 +344,8 @@ int CPU::execute()
     byte original_X = X;
     byte original_SP = SP;
     bool page_cross = false;
-
+    int original_cycles = cycles;
+    
     if (original_pc == 0xFFFF)
     {
         cout << "End of program";
@@ -358,8 +364,22 @@ int CPU::execute()
     byte low_nibble = inst.opcode & 0x0F;
     byte high_nibble = inst.opcode >> 4;
     uint16_t address = 0;
-
-    if (low_nibble == 0x00 && last_5_bits == 0b00010000)
+    if(inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
+    {
+        PC += 1;
+        cycles += 3;
+    }
+    else if(inst.opcode == 0x0C)
+    {
+        PC += 2;
+        cycles += 4;
+    }
+    else if(inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
+    {
+        PC += 1;
+        cycles += 4;
+    }
+    else if (low_nibble == 0x00 && last_5_bits == 0b00010000)
     {
         // here we have branching
         int8_t branch_position = (int8_t)read_pc();
@@ -438,6 +458,6 @@ int CPU::execute()
 
     // TODO: check if this is the correct way to call tracer
     TRACER my_tracer(*this);
-    my_tracer.tracer(original_pc, original_flags, original_A, original_X, original_Y, original_SP);
+    my_tracer.tracer(original_pc, original_flags, original_A, original_X, original_Y, original_SP, original_cycles);
     return 1;
 }

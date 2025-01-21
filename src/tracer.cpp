@@ -7,29 +7,34 @@
 #include <fstream>
 #include <sstream>
 using std::cout;
-using std::string;
 using std::getline;
+using std::string;
 
 std::ifstream logs("nestest.log");
 
 int get_string_value(string x, string entry)
 {
     int value;
+    string value_str;
     int pos = entry.find(x);
-    if(pos == string::npos)
+    if (pos == string::npos)
     {
         cout << "Invalid log entry" << '\n';
         return -1;
     }
-    if(!x.compare("SP:"))
-    {
-        pos += 3;
-    }
-    else pos += 2;
-    string value_str = entry.substr(pos, 2);
-    std::stringstream(value_str) >> std::hex >> value;
-    return value;
+    pos += x.length();
 
+    int end_pos = entry.find(' ', pos);
+    if (x.compare("CYC:"))
+        value_str = entry.substr(pos, 2);
+    else
+        value_str = entry.substr(pos, end_pos - pos);
+
+    if (x.compare("CYC:"))
+        std::stringstream(value_str) >> std::hex >> value;
+    else
+        std::stringstream(value_str) >> value;
+    return value;
 }
 // retruns length of operand!
 byte compute_operand_length_g1(byte bbb)
@@ -137,7 +142,6 @@ byte compute_operand_length_g23(byte bbb, byte opcode)
         }
         case 0x4:
         {
-            std::cerr << "INVALID OPCODE\n";
             break;
         }
         case 0x5: // zero page, x
@@ -147,7 +151,6 @@ byte compute_operand_length_g23(byte bbb, byte opcode)
         }
         case 0x6:
         {
-            std::cerr << "INVALID OPCODE\n";
             break;
         }
         case 0x7: // absolute, x
@@ -200,7 +203,6 @@ string compute_instruction_name_group3(byte aaa, string &observations)
     switch (aaa)
     {
     case 0x0:
-        return "INVALID OPCODE";
         break;
     case 0x1:
         return "BIT";
@@ -230,12 +232,12 @@ string compute_instruction_name_group3(byte aaa, string &observations)
     return "";
 }
 
-void TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP)
+void TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP, int cycles)
 {
     // ADDRESSING MODES AT https://llx.com/Neil/a2/opcodes.html
     // LOG: Address, OPCODE, INST, A:, X:, Y:, P:, SP:
     // cout << std::hex << cpu.get_pc() << " " <<  cpu.get_inst_opcode();
-    
+
     string observations = "";
     Instruction inst;
     inst.opcode = cpu.ram_at(PC);
@@ -253,7 +255,22 @@ void TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP)
 
     byte instruction_length = 1; // IT CAN BE 1, 2, 3 AT MOST
     bool branch_instruction = false;
-    if (low_nibble == 0x00 && last_5_bits == 0b00010000)
+    if (inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
+    {
+        instruction_name = "NOP";
+        instruction_length = 2;
+    }
+    else if (inst.opcode == 0xC0)
+    {
+        instruction_name = "NOP";
+        instruction_length = 3;
+    }
+    else if (inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
+    {
+        instruction_name = "NOP";
+        instruction_length = 2;
+    }
+    else if (low_nibble == 0x00 && last_5_bits == 0b00010000)
     {
         branch_instruction = true;
         instruction_length = 2;
@@ -433,68 +450,71 @@ void TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP)
     if (instruction_length == 1)
     {
         cout << std::hex << std::uppercase
-                   << (int)cpu.ram_at(PC) << std::setw(7) << std::setfill(' ');
+             << (int)cpu.ram_at(PC) << std::setw(7) << std::setfill(' ');
     }
     else if (instruction_length == 2)
     {
         cout << std::hex << std::uppercase
-                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
-                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1)
-                  << std::setw(4) << std::setfill(' ');
+             << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
+             << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1)
+             << std::setw(4) << std::setfill(' ');
     }
     else if (instruction_length == 3)
     {
         cout << std::hex << std::uppercase
-                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
-                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1) << " "
-                  << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 2);
+             << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
+             << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1) << " "
+             << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 2);
     }
     cout << " ";
     cout << instruction_name << " ";
-    cout << std::hex << std::uppercase << "A:" << std::setw(2) << (int)A << " X:" 
+    cout << std::hex << std::uppercase << "A:" << std::setw(2) << (int)A << " X:"
          << std::setw(2) << (int)X << " Y:" << std::setw(2) << (int)Y << " P:"
-         << std::setw(2) << (int)FLAGS << " SP:" << (int)cpu.get_SP() << " ";
-    if(!logs)
+         << std::setw(2) << (int)FLAGS << " SP:" << (int)cpu.get_SP() << " CYC:";
+    cout << std::dec << (int)cycles;
+    if (!logs)
     {
         cout << "could not open correct log file";
     }
 
-    
-
     string log_entry;
     getline(logs, log_entry);
-    
-    string log_address = log_entry.substr(0, log_entry.find(" "));
 
+    string log_address = log_entry.substr(0, log_entry.find(" "));
 
     int a_value = get_string_value("A:", log_entry);
     int x_value = get_string_value("X:", log_entry);
     int y_value = get_string_value("Y:", log_entry);
-    int p_value = get_string_value("P:", log_entry);    
+    int p_value = get_string_value("P:", log_entry);
     int sp_value = get_string_value("SP:", log_entry);
-    if(log_address.compare(address_string))
+    int cycle_value = get_string_value("CYC:", log_entry);
+    if (log_address.compare(address_string))
     {
         cout << " address problem here!";
     }
-    if(p_value != FLAGS)
+    if (p_value != FLAGS)
     {
         cout << " flag problem here!";
     }
-    if(a_value != A)
+    if (a_value != A)
     {
         cout << "A problem here!";
     }
-    if(x_value != X)
+    if (x_value != X)
     {
         cout << "X problem here!";
     }
-    if(y_value != Y)
+    if (y_value != Y)
     {
         cout << "Y problem here!";
     }
-    if(sp_value != SP)
+    if (sp_value != SP)
     {
         cout << "SP problem herE!";
+    }
+    if(cycles != cycle_value)
+    {
+        cout << "CYCLE problem HERE!";
     }
     cout << '\n';
     int t = 0;
