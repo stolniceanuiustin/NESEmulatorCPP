@@ -1,8 +1,9 @@
 #ifndef cpu_header
 #define cpu_header
 #include <stdint.h>
+#include "../Memory/memory.h"
 #define TEST
-#include "emulator_config.h"
+#include "../emulator_config.h"
 
 typedef uint8_t byte;
 
@@ -26,13 +27,8 @@ class CPU
 {
 public:
 	struct Instruction inst;
-	byte ram[65536];
-#ifndef TEST
-private:
-#endif 
-#ifdef TEST
+	Memory ram;
 public:
-#endif
 	//STACK IS at page 1 0100 - 01FF, sp goes from 
 	byte A; // Registrii Accumulator, X, Y
 	byte X;
@@ -50,7 +46,12 @@ public:
 	byte O; // overflow //iN DOCUMENTATION IT'S V BUT O is more intuitive
 	byte N; // negative
 	
+
+	CPU(Memory& ram) : ram(ram)
+	{
+	}
 	bool init(Config config, bool NES);
+	bool reset();
 
 	byte ram_at(uint16_t address)
 	{	
@@ -84,7 +85,9 @@ public:
 	{
 		return SP;
 	}
-	bool reset();
+	byte pack_flags();
+	void unpack_flags(byte flags);
+
 	byte read_pc()
 	{
 		byte val = ram[PC];
@@ -93,7 +96,6 @@ public:
 	}
 
 	uint16_t read_address_from_pc();
-	void write_byte(byte *address, byte value);
 	uint16_t read_address(byte offset);
 	int execute();
 	uint16_t read_abs_address(uint16_t offset);
@@ -101,14 +103,11 @@ public:
 	void push_address(uint16_t address);
 	byte pop();
 	uint16_t pop_address();
-	byte pack_flags();
-	void unpack_flags(byte flags);
-
-	bool compute_addr_mode_g23(bool &page_cross, uint16_t &address_to_return);
 	
-	void JSR_abs(uint16_t address);
-	void RTS();	
-	void RTI();
+
+	
+	
+
 
 	// First group of instructions
 	void set_ZN(byte value);
@@ -124,7 +123,7 @@ public:
 	void SBC(uint16_t address, bool page_cross);
 
 	// Second group of instructions
-
+	bool compute_addr_mode_g23(bool &page_cross, uint16_t &address_to_return);
 	void run_instruction_group2(uint16_t address, bool page_cross, bool accumulator);
 	void ASL(uint16_t address, bool accumulator);
 	void ROL(uint16_t address, bool accumulator);
@@ -180,6 +179,10 @@ public:
 	const uint16_t BRK_vector = 0xFFFE;
 
 	void trigger_irq();
+
+	void JSR_abs(uint16_t address);
+	void RTS();	
+	void RTI();
 };
 
 

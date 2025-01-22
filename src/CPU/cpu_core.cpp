@@ -53,13 +53,6 @@ uint16_t CPU::pop_address()
     return to_return;
 }
 
-void CPU::write_byte(byte *address, byte value)
-{
-    // sleep(CLOCK_TIME);
-    // sleep(0.1);
-    *address = value;
-    return;
-}
 
 uint16_t CPU::read_address(byte offset)
 {
@@ -298,7 +291,6 @@ bool CPU::init(Config config, bool NES)
     if (NES)
     {
         SP = 0xFD;
-        std::memset(ram, 0, sizeof(ram));
         NESHeader header;
         rom.read(reinterpret_cast<char *>(&header), sizeof(header));
         if (header.magic[0] != 'N' || header.magic[1] != 'E' || header.magic[2] != 'S' || header.magic[3] != 0x1A)

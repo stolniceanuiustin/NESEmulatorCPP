@@ -2,8 +2,8 @@
 #include "emulator_config.h"
 //#include "SDL.h"
 #include <unistd.h>
-#include "cpu_header.h"
-#include "unittest.h"
+#include "CPU/cpu_header.h"
+#include "CPU/unittest.h"
 using std::cout;
 
 int main(int argc, char *argv[])
@@ -32,12 +32,8 @@ int main(int argc, char *argv[])
     //     SDL_RenderClear(renderer);
     //     SDL_RenderPresent(renderer);
     // }
-
-    
-
-    
-
-    CPU cpu;
+    Memory ram = Memory();
+    CPU cpu = CPU(ram);
     cpu.reset();
     // if(argc < 2)
     // {
@@ -74,7 +70,8 @@ int main(int argc, char *argv[])
     {
         return false;
     }
-    fwrite(cpu.ram, sizeof(byte), 0xFFFF, hexdumpfile);
+    //TODO : Check how to do hexdump agian
+    // fwrite(cpu.ram, sizeof(byte), 0xFFFF, hexdumpfile);
     }
 
     

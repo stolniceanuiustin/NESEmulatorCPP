@@ -231,7 +231,8 @@ void test_group_3(Assert& assert, CPU& cpu)
 }
 void Assert::unit_test()
 {
-    CPU cpu;
+    Memory ram = Memory();
+    CPU cpu(ram);
     cpu.reset();
     test_group_1(*this, cpu);
     test_group_2(*this, cpu);
