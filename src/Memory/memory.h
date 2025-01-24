@@ -3,34 +3,42 @@
 #include <stdint.h>
 #include <cstring>
 #include <iostream>
-
+#include <fstream>
+#include <string>
 typedef uint8_t byte;
 
 class Memory
 {
 private:
-    byte ram[65536];
+    byte memory[65536];
+
 public:
     Memory()
     {
-        memset(ram, 0, 65536);
+        memset(memory, 0, 65536);
     }
-    byte& operator[](uint16_t address)
+    Memory& operator=(const Memory&) = delete;
+    byte &operator[](uint16_t address)
     {
-        if(address >= 0 && address <= 0xFFFF)
+        if (address >= 0 && address <= 0xFFFF)
         {
-            return ram[address];
+            return memory[address];
         }
-        else{
+        else
+        {
             std::cerr << "Out of bounds index for memory read\n";
             exit(-1);
         }
     }
+    byte* get_address(uint16_t address)
+    {
+        return &memory[address];
+    }
     void write(uint16_t address, byte src)
     {
-        if(address >= 0 && address <= 0xFFFF)
+        if (address >= 0 && address <= 0xFFFF)
         {
-            ram[address] = src;
+            memory[address] = src;
         }
         else
         {
@@ -38,13 +46,12 @@ public:
             exit(-1);
         }
     }
-
+    void hexdump(char* filename)
+    {
+        FILE *file = fopen(filename, "wb"); 
+        fwrite(memory, sizeof(byte), 0xFFFF, file);
+        fclose(file);
+    }
 };
-
-
-
-
-
-
 
 #endif

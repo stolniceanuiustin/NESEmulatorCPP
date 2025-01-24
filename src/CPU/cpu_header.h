@@ -27,7 +27,7 @@ class CPU
 {
 public:
 	struct Instruction inst;
-	Memory ram;
+	Memory& ram;
 public:
 	//STACK IS at page 1 0100 - 01FF, sp goes from 
 	byte A; // Registrii Accumulator, X, Y
@@ -50,7 +50,7 @@ public:
 	CPU(Memory& ram) : ram(ram)
 	{
 	}
-	bool init(Config config, bool NES);
+	void init();
 	bool reset();
 
 	byte ram_at(uint16_t address)
@@ -174,7 +174,7 @@ public:
 	
 	//INTERRUPTS 
 	const uint16_t NMI_vector = 0xFFFA;
-	const uint16_t reset_vector = 0xFFFC;
+	const uint16_t RESET_VECTOR = 0xFFFC;
 	const uint16_t IRQ_vector = 0xFFFE;
 	const uint16_t BRK_vector = 0xFFFE;
 

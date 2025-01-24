@@ -19,6 +19,8 @@ public:
 		rom_name = rom;
 		max_rom_size = MAX_ROM_SIZE;
 	}
+    bool nametable_arrangement;
+    bool has_battery_PRG_RAM;
 };
 
 struct NESHeader

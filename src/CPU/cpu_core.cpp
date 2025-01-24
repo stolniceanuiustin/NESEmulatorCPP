@@ -24,8 +24,7 @@ void CPU::push(byte x)
     SP--;
 }
 
-
-//TODO : CHECK ALL STACK OPERATIONS ALL OF THEM MIGHT BE WRONG(BUT MAYBE NOT)!!
+// TODO : CHECK ALL STACK OPERATIONS ALL OF THEM MIGHT BE WRONG(BUT MAYBE NOT)!!
 
 void CPU::push_address(uint16_t address)
 {
@@ -34,8 +33,6 @@ void CPU::push_address(uint16_t address)
 
     ram[0x0100 + SP] = address & 0x00FF;
     SP--;
-    
-    
 }
 
 byte CPU::pop()
@@ -52,7 +49,6 @@ uint16_t CPU::pop_address()
     to_return |= low_byte;
     return to_return;
 }
-
 
 uint16_t CPU::read_address(byte offset)
 {
@@ -92,7 +88,7 @@ bool CPU::reset()
     B = 0;
     O = 0;
     N = 0;
-    for (int i = 0; i < 0xFFFF; i++)
+    for (int i = 0; i < 0x8000; i++)
         ram[i] = 0;
     cycles = 0;
     return true;
@@ -167,7 +163,7 @@ void CPU::run_instruction_group3(uint16_t address, bool page_cross)
     switch (inst.aaa)
     {
     case 0x0:
-        //printf("INVALID OPCODE \n");
+        // printf("INVALID OPCODE \n");
         break;
     case 0x1:
         BIT(address);
@@ -280,49 +276,15 @@ void CPU::run_instruction_group_sb2()
     }
 }
 
-bool CPU::init(Config config, bool NES)
+void CPU::init()
 {
-    std::ifstream rom(config.rom_name, std::ios::binary);
-    if (!rom)
-    {
-        std::cerr << "Could not open ROM FILE\n";
-        return false;
-    }
-    if (NES)
-    {
-        SP = 0xFD;
-        NESHeader header;
-        rom.read(reinterpret_cast<char *>(&header), sizeof(header));
-        if (header.magic[0] != 'N' || header.magic[1] != 'E' || header.magic[2] != 'S' || header.magic[3] != 0x1A)
-        {
-            std::cerr << "Invalid NES file: Missing iNES header.\n";
-            return 1;
-        }
-
-        int prg_size = header.prg_size * 16 * 1024;
-        int chr_size = header.chr_size * 8 * 1024;
-
-        rom.read(reinterpret_cast<char *>(&ram[0x8000]), prg_size);
-        rom.close();
-        if (prg_size == 0x4000)
-        {
-            std::memcpy(&ram[0xC000], &ram[0x8000], 0x4000);
-        }
-    }
-    else 
-    {
-        rom.read(reinterpret_cast<char*>(&ram[0x0000]), 0xFFFF);
-        rom.close();
-    }
-    
-    PC = config.code_segment;
-    return true;
+    SP = 0xFD;
+    PC = read_abs_address(RESET_VECTOR);
 }
 
-//TODO : IMPLEMENT UNOFFICIAL OPCODES:
-//https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
-//SOME CAN EVEN CROSS PAGES :))))))))))))))
-
+// TODO : IMPLEMENT UNOFFICIAL OPCODES:
+// https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
+// SOME CAN EVEN CROSS PAGES :))))))))))))))
 
 // RUNS ONE OPCODE
 int CPU::execute()
@@ -337,15 +299,16 @@ int CPU::execute()
     byte original_SP = SP;
     bool page_cross = false;
     int original_cycles = cycles;
-    
+
     if (original_pc == 0xFFFF)
     {
         cout << "End of program";
         // cpu->state = QUIT;
         return -1;
     }
+
     inst.opcode = read_pc();
-    if(original_pc == 0xC754)
+    if (original_pc == 0xC754)
         int t = 0;
     inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
     inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
@@ -356,17 +319,17 @@ int CPU::execute()
     byte low_nibble = inst.opcode & 0x0F;
     byte high_nibble = inst.opcode >> 4;
     uint16_t address = 0;
-    if(inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
+    if (inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
     {
         PC += 1;
         cycles += 3;
     }
-    else if(inst.opcode == 0x0C)
+    else if (inst.opcode == 0x0C)
     {
         PC += 2;
         cycles += 4;
     }
-    else if(inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
+    else if (inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
     {
         PC += 1;
         cycles += 4;

@@ -477,45 +477,45 @@ void TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP, in
         cout << "could not open correct log file";
     }
 
-    string log_entry;
-    getline(logs, log_entry);
+   // string log_entry;
+   // getline(logs, log_entry);
 
-    string log_address = log_entry.substr(0, log_entry.find(" "));
+   // string log_address = log_entry.substr(0, log_entry.find(" "));
 
-    int a_value = get_string_value("A:", log_entry);
-    int x_value = get_string_value("X:", log_entry);
-    int y_value = get_string_value("Y:", log_entry);
-    int p_value = get_string_value("P:", log_entry);
-    int sp_value = get_string_value("SP:", log_entry);
-    int cycle_value = get_string_value("CYC:", log_entry);
-    if (log_address.compare(address_string))
-    {
-        cout << " address problem here!";
-    }
-    if (p_value != FLAGS)
-    {
-        cout << " flag problem here!";
-    }
-    if (a_value != A)
-    {
-        cout << "A problem here!";
-    }
-    if (x_value != X)
-    {
-        cout << "X problem here!";
-    }
-    if (y_value != Y)
-    {
-        cout << "Y problem here!";
-    }
-    if (sp_value != SP)
-    {
-        cout << "SP problem herE!";
-    }
-    if(cycles != cycle_value)
-    {
-        cout << "CYCLE problem HERE!";
-    }
+    // int a_value = get_string_value("A:", log_entry);
+    // int x_value = get_string_value("X:", log_entry);
+    // int y_value = get_string_value("Y:", log_entry);
+    // int p_value = get_string_value("P:", log_entry);
+    // int sp_value = get_string_value("SP:", log_entry);
+    // int cycle_value = get_string_value("CYC:", log_entry);
+    // if (log_address.compare(address_string))
+    // {
+    //     cout << " address problem here!";
+    // }
+    // if (p_value != FLAGS)
+    // {
+    //     cout << " flag problem here!";
+    // }
+    // if (a_value != A)
+    // {
+    //     cout << "A problem here!";
+    // }
+    // if (x_value != X)
+    // {
+    //     cout << "X problem here!";
+    // }
+    // if (y_value != Y)
+    // {
+    //     cout << "Y problem here!";
+    // }
+    // if (sp_value != SP)
+    // {
+    //     cout << "SP problem herE!";
+    // }
+    // if(cycles != cycle_value)
+    // {
+    //     cout << "CYCLE problem HERE!";
+    // }
     cout << '\n';
     int t = 0;
 }

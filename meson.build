@@ -10,7 +10,8 @@ src_files = [
     'src/CPU/instructions_intrerrupts.cpp',
     'src/CPU/instructions_single_byte.cpp',
     'src/CPU/unittest.cpp',
-    'src/CPU/tracer.cpp'
+    'src/CPU/tracer.cpp',
+    'src/Mappers/mapper0.cpp'
 ]
 
 

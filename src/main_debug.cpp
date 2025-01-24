@@ -1,9 +1,11 @@
 #include <iostream>
 #include "emulator_config.h"
-//#include "SDL.h"
+// #include "SDL.h"
 #include <unistd.h>
 #include "CPU/cpu_header.h"
 #include "CPU/unittest.h"
+#include "PPU/ppu.h"
+#include "Mappers/mapper.h"
 using std::cout;
 
 int main(int argc, char *argv[])
@@ -32,49 +34,38 @@ int main(int argc, char *argv[])
     //     SDL_RenderClear(renderer);
     //     SDL_RenderPresent(renderer);
     // }
-    Memory ram = Memory();
-    CPU cpu = CPU(ram);
-    cpu.reset();
     // if(argc < 2)
     // {
     //     std::cerr << "Usage: " << argv[0] << "rom_name\n";
     //     return -1;
     // }
 
-   // Config config = Config(argv[1]);
-    Config config = Config("../roms/nestest.nes");
-    config.code_segment = 0xC000;
-    // Config config = Config("../roms/6502_functional_test.bin");
-    // config.code_segment = 0x0400;
-    if(!cpu.init(config, true))
-    {
-        return -1;
-    }
+    Memory ram;
+    Config config = Config("../roms/donkeykong.nes");
+    mapper(config, ram);
+    ram[0] = 0xFF;
+    CPU cpu = CPU(ram);
+    cpu.reset();
+    cpu.init();
+    PPU ppu(ram);
+    config.code_segment = cpu.read_abs_address(0xFFFC);
+
+    std::cout << "RAM ADDRESS IN main:" << &ram << '\n';
+    cpu.ram.hexdump("CPU_ram");
+    ram.hexdump("RAM");
     int t = 0;
-    cpu.cycles += 7;
+    //cpu.cycles += 7;
     bool run = true;
-    while(run)
+    while (run)
     {
-        for(int i=0; i<6000; i++)
+        for (int i = 0; i < 35000; i++)
         {
-            if(i == 4908)
-            {
-                int x = 0;
-            }
             cpu.execute();
             usleep(0.558659218);
         }
         run = false;
-    FILE *hexdumpfile = fopen("hexdump", "wb");
-    if (!hexdumpfile)
-    {
-        return false;
     }
-    //TODO : Check how to do hexdump agian
-    // fwrite(cpu.ram, sizeof(byte), 0xFFFF, hexdumpfile);
-    }
-
-    
+    // ram.hexdump();
 
     // SDL_DestroyRenderer(renderer);
     // SDL_DestroyWindow(window);
