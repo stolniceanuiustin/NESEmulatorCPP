@@ -2,7 +2,8 @@
 #define HEADERGUARD_PPU
 
 #include <stdint.h>
-#include "../Memory/memory.h"
+#include "memory.h"
+#include "cpu_header.h"
 #define PPUCTRL shared_ram[0x2000]
 #define PPUMASK shared_ram[0x2001]
 #define PPUSTATUS shared_ram[0x2002]
@@ -15,9 +16,9 @@
 
 #define VISIBLE_SCANLINES 240
 #define VISIBLE_DOTS 256
-#define NTSC_SCANLINES_PER_FRAME 261
+#define FRAME_END_SCANLINE 261
 #define DOTS_PER_SCANLINE 341
-#define END_DOT 340
+#define LAST_SCANLINE_DOT 340
 
 #define SHOW_BG PPUMASK & 1 << 3
 #define VBLANK (PPUCTRL & 1 << 7) >> 7;
@@ -28,6 +29,7 @@ typedef uint8_t byte;
 class PPU
 {
 public:
+    CPU &cpu;
     Memory &shared_ram; // SHARED RAM
     Memory &internal_ram; //internal RAM;
     uint16_t current_frame;
@@ -42,9 +44,11 @@ public:
     uint16_t dots;
     bool PPUSCROLL_latch = false;
     bool PPUADDR_latch = false;
+    bool first_write = false;
     uint16_t PPUSCROLL16;
     uint16_t PPUADDR16;
-    PPU(Memory &ram, Memory &internal_ram) : shared_ram(ram), internal_ram(internal_ram) {
+    bool even_frame = false;
+    PPU(Memory &ram, Memory &internal_ram, CPU& cpu) : shared_ram(ram), internal_ram(internal_ram), cpu(cpu) {
         current_frame = 0;
         PPUCTRL = 0x00;
         PPUMASK = 0x00;
@@ -58,6 +62,7 @@ public:
         v = 0;
         scanline = 0;
         dots = 0;
+        pipeline_state = PRE_RENDER;
     }
     
     byte OAM[256];
@@ -68,6 +73,7 @@ public:
     void clear_vblank_nmi();
     void set_vblank();
     void clear_vblank();
+    byte get_status();
 
 private:
     enum State
@@ -75,7 +81,7 @@ private:
         PRE_RENDER,
         RENDER,
         POST_RENDER,
-        VERTICAL_BLANK;
+        VERTICAL_BLANK
     } pipeline_state;
     int cycle;
     

@@ -1,12 +1,13 @@
 #include <iostream>
-#include "emulator_config.h"
-#include "SDL.h"
-#include "SDL_backend.h"
 #include <unistd.h>
-#include "CPU/cpu_header.h"
-#include "CPU/unittest.h"
-#include "PPU/ppu.h"
-#include "Mappers/mapper.h"
+#include "../include/emulator_config.h"
+#include "SDL.h"
+#include "../include/SDL_backend.h"
+#include "../include/cpu_header.h"
+#include "../include/unittest.h"
+#include "../include/ppu.h"
+#include "../include/mapper.h"
+
 using std::cout;
 
 int main(int argc, char *argv[])
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
     init_sdl(sdl);
     sdl.state = PAUSED;
 
+    //TODO: COMMON BUS, maybe move the registers from the ppu to the common bus, idk if its wortH?
     Memory ram(0xFFFF);
     Memory ppu_ram(0x3FFF);
     Config config = Config("../roms/donkeykong.nes");
@@ -28,7 +30,7 @@ int main(int argc, char *argv[])
     CPU cpu = CPU(ram);
     cpu.reset();
     cpu.init();
-    PPU ppu(ram, ppu_ram);
+    PPU ppu(ram, ppu_ram, cpu);
     config.code_segment = cpu.read_abs_address(0xFFFC);
 
     std::cout << "RAM ADDRESS IN main:" << &ram << '\n';
@@ -44,6 +46,7 @@ int main(int argc, char *argv[])
             for (int i = 0; i <= 100000; i++)
             {
                 cpu.execute();
+                //CHECK HOW MANY CYCLES THEN CATCH UP THE PPU!
                 ppu.execute();
                 ppu.execute();
                 ppu.execute();

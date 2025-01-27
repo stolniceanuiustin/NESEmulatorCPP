@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <fstream>
 #include <iostream>
-#include "../emulator_config.h"
-#include "../Memory/memory.h"
+#include "emulator_config.h"
+#include "memory.h"
 
 bool mapper(Config &config, Memory& ram, Memory& ppu_ram);
 bool mapper0(Config &config, Memory& ram, Memory& ppu_ram, NESHeader header, std::ifstream &rom);

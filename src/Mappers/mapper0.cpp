@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <fstream>
 #include <iostream>
-#include "../emulator_config.h"
-#include "../Memory/memory.h"
-#include "mapper.h"
+#include "../include/emulator_config.h"
+#include "../include/memory.h"
+#include "../include/mapper.h"
 bool mapper0(Config &config, Memory& ram, Memory& ppu_ram, NESHeader header, std::ifstream &rom)
 {
     std::cout << "RAM ADDRESS IN mapper0:" << &ram << '\n';

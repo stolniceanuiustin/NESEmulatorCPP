@@ -1,4 +1,4 @@
-#include "mapper.h"
+#include "../include/mapper.h"
 #include <iostream>
 
 Nametable_Map nametablee;

@@ -1,5 +1,5 @@
-#include "cpu_header.h"
-#include "tracer.h"
+#include "../include/cpu_header.h"
+#include "../include/tracer.h"
 #include <iostream>
 #include <stdint.h>
 #include <string>

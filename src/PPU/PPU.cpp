@@ -1,5 +1,10 @@
-#include "ppu.h"
-#include "../emulator_config.h"
+#include "../include/ppu.h"
+#include "../include/emulator_config.h"
+
+void clear_status_register(byte& x)
+{
+    x &= 0b00011111;
+}
 
 void PPU::reset()
 {
@@ -9,54 +14,76 @@ void PPU::reset()
     PPUSCROLL = 0x0000;
     PPUDATA = 0x00;
 }
-
+byte PPU::get_status()
+{
+    byte status = PPUSTATUS & 0b11100000;
+    clear_vblank(); //VBLANK is cleared whenever PPUSTATUS IS READ;
+    first_write = true;
+    return status;
+}
 void PPU::execute()
 {
-    if(dots >= 0 && dots < VISIBLE_DOTS)
+    switch(pipeline_state)
     {
-        dots++;
-        //DO SOMETHING
+        case PRE_RENDER:
+            if(dots == 1)
+            {
+                PPUSTATUS &= 0b00011111; 
+            }
+            if(dots >= LAST_SCANLINE_DOT)
+            {
+                pipeline_state = RENDER;
+                dots = 0;
+                scanline = 0;
+            }
+            break;
+        case RENDER:
+            if(dots > 0 && dots <= VISIBLE_DOTS)
+            {
+                //do something someday!
+            }
+            if(dots >= LAST_SCANLINE_DOT)
+            {
+                scanline++;
+                dots = 0;
+            }
+            if(scanline >= VISIBLE_SCANLINES)
+            {
+                pipeline_state = POST_RENDER;
+            }
+            break;
+        case POST_RENDER:
+            if(dots >= LAST_SCANLINE_DOT)
+            {
+                scanline++;
+                dots = 0;
+                pipeline_state = VERTICAL_BLANK;
+            }
+            break;
+        case VERTICAL_BLANK:
+            if(dots == 1 && scanline == VISIBLE_SCANLINES + 1)
+            {
+                set_vblank();
+                if(PPUCTRL & (1 << 7))
+                {
+                    cpu.enqueue_nmi();
+                }
+            }
+            if(dots >= LAST_SCANLINE_DOT)
+            {
+                scanline++;
+                dots=0;
+            }
+            if(scanline >= FRAME_END_SCANLINE)
+            {
+                pipeline_state = PRE_RENDER;
+                scanline = 0;
+                even_frame = !even_frame;
+            }
     }
-    else if(dots == VISIBLE_DOTS)
-    {
-        dots++;
-    }
-    else if(dots > VISIBLE_DOTS && dots < END_DOT-1)
-    {
-        dots++;
-    }
-    else if(dots == END_DOT - 1)
-    {
-        if(scanline != NTSC_SCANLINES_PER_FRAME - 1)
-            scanline++;
-        else scanline = 0;
-        dots = 0;
-    }
-
-    if (scanline < VISIBLE_SCANLINES)
-    {
-        clear_vblank_nmi();
-    }
-    else if(scanline == VISIBLE_SCANLINES && dots == 0)
-    {
-        set_vblank_nmi();
-    }
-    else if(scanline >= VISIBLE_SCANLINES && scanline < NTSC_SCANLINES_PER_FRAME-1)
-    {
-        clear_vblank_nmi();
-    }
+    dots++;
 }
 
-
-void PPU::set_vblank_nmi()
-{a
-    PPUCTRL |= 1 << 7;
-}
-
-void PPU::clear_vblank_nmi()
-{
-    PPUCTRL &= ~(1 << 7);
-}
 
 void PPU::set_vblank()
 {

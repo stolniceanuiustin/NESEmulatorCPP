@@ -1,9 +1,11 @@
-#ifndef cpu_header
-#define cpu_header
+#ifndef HEADERGAURD_CPU_HEADER
+#define HEADERGAURD_CPU_HEADER
 #include <stdint.h>
-#include "../Memory/memory.h"
+#include "memory.h"
+#include "emulator_config.h"
+
 #define TEST
-#include "../emulator_config.h"
+
 
 typedef uint8_t byte;
 
@@ -178,12 +180,19 @@ public:
 	const uint16_t IRQ_vector = 0xFFFE;
 	const uint16_t BRK_vector = 0xFFFE;
 
+	bool pending_nmi;
+	bool pending_irq;
 	void trigger_irq();
 	void trigger_nmi();
 
 	void JSR_abs(uint16_t address);
 	void RTS();	
 	void RTI();
+
+	void enqueue_nmi()
+	{
+		pending_nmi = true;
+	}
 };
 
 

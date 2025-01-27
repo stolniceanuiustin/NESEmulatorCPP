@@ -1,6 +1,6 @@
 #include "SDL.h"
-#include "SDL_backend.h"
-#include "emulator_config.h"
+#include "include/SDL_backend.h"
+#include "include/emulator_config.h"
 #include <iostream>
 int init_sdl(SDL& sdl)
 {

@@ -1,4 +1,4 @@
-#include "cpu_header.h"
+#include "../include/cpu_header.h"
 
 // Here will be all the helper functions for emulating the instructions
 

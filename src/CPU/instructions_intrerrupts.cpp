@@ -1,4 +1,4 @@
-#include "cpu_header.h"
+#include "../include/cpu_header.h"
 #include <iostream>
 void CPU::NOP()
 {
@@ -50,6 +50,8 @@ void CPU::trigger_nmi()
     push(pack_flags());
     PC = read_abs_address(NMI_vector);
     I = 1;
+    
+    pending_nmi = false;
 }
 
 void CPU::RTI()

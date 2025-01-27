@@ -1,4 +1,4 @@
-#include "cpu_header.h"
+#include "../include/cpu_header.h"
 
 byte CPU::pack_flags()
 {
