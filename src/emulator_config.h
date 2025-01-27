@@ -33,4 +33,6 @@ struct NESHeader
     byte unused[8];
 };
 
+
+void init_sdl();
 #endif

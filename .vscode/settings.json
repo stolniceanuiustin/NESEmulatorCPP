@@ -51,5 +51,9 @@
         "ctime": "cpp",
         "iomanip": "cpp",
         "sstream": "cpp"
-    }
+    },
+    "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+        "cppcoreguidelines-avoid-magic-numbers",
+        "cppcoreguidelines-macro-to-enum"
+    ]
 }

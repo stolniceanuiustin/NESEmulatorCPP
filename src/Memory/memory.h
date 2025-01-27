@@ -10,12 +10,19 @@ typedef uint8_t byte;
 class Memory
 {
 private:
-    byte memory[65536];
+    byte* memory;
 
 public:
-    Memory()
+    Memory(int size)
     {
-        memset(memory, 0, 65536);
+        if(size <= 65536)
+        {
+            memory = new byte[size];
+        }
+        else{
+            std::cerr << "You are trying to allocate too much memory!\n";
+        }
+        memset(memory, 0, size);
     }
     Memory& operator=(const Memory&) = delete;
     byte &operator[](uint16_t address)
@@ -46,10 +53,10 @@ public:
             exit(-1);
         }
     }
-    void hexdump(char* filename)
+    void hexdump(char* filename, uint16_t size)
     {
         FILE *file = fopen(filename, "wb"); 
-        fwrite(memory, sizeof(byte), 0xFFFF, file);
+        fwrite(memory, sizeof(byte), size, file);
         fclose(file);
     }
 };

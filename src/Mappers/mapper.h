@@ -6,6 +6,11 @@
 #include "../emulator_config.h"
 #include "../Memory/memory.h"
 
-bool mapper(Config &config, Memory& ram);
-bool mapper0(Config &config, Memory& ram, NESHeader header, std::ifstream &rom);
+bool mapper(Config &config, Memory& ram, Memory& ppu_ram);
+bool mapper0(Config &config, Memory& ram, Memory& ppu_ram, NESHeader header, std::ifstream &rom);
+struct Nametable_Map
+{
+    uint16_t map[4];
+};
+
 #endif

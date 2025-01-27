@@ -1,5 +1,5 @@
 #include "cpu_header.h"
-
+#include <iostream>
 void CPU::NOP()
 {
     cycles += 2;
@@ -40,6 +40,16 @@ void CPU::trigger_irq()
         PC = read_abs_address(IRQ_vector);
         I = 1;
     }
+}
+
+void CPU::trigger_nmi()
+{
+    std::cout << "===============NMI TRIGGERED===============\n";
+    SP = 0xFF;
+    push_address(PC);
+    push(pack_flags());
+    PC = read_abs_address(NMI_vector);
+    I = 1;
 }
 
 void CPU::RTI()

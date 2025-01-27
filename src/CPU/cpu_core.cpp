@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <cstdint>
 #include <cstring>
+#include "../PPU/ppu.h"
 #define DEBUG
 
 using std::cout;
@@ -289,6 +290,10 @@ void CPU::init()
 // RUNS ONE OPCODE
 int CPU::execute()
 {
+    if((ram[0x2000] & 1 << 7) >> 7)
+    {
+        trigger_nmi();   
+    } 
     // TODO ADD ELSE IFS!
     bool onaddress_group2 = false;
     uint16_t original_pc = PC;

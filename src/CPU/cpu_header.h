@@ -179,6 +179,7 @@ public:
 	const uint16_t BRK_vector = 0xFFFE;
 
 	void trigger_irq();
+	void trigger_nmi();
 
 	void JSR_abs(uint16_t address);
 	void RTS();	
