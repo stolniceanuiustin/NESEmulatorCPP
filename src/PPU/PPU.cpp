@@ -1,6 +1,8 @@
 #include "../include/ppu.h"
 #include "../include/emulator_config.h"
-
+#include <iostream>
+#include <fstream>
+std::ofstream ppu_log("ppu_log.log");
 void clear_status_register(byte& x)
 {
     x &= 0b00011111;
@@ -16,7 +18,7 @@ void PPU::reset()
 }
 byte PPU::get_status()
 {
-    byte status = PPUSTATUS & 0b11100000;
+    byte status = PPUSTATUS & 0b11100000; 
     clear_vblank(); //VBLANK is cleared whenever PPUSTATUS IS READ;
     first_write = true;
     return status;
@@ -26,6 +28,7 @@ void PPU::execute()
     switch(pipeline_state)
     {
         case PRE_RENDER:
+            ppu_log << "PRERENDER";
             if(dots == 1)
             {
                 PPUSTATUS &= 0b00011111; 
@@ -38,6 +41,7 @@ void PPU::execute()
             }
             break;
         case RENDER:
+            ppu_log << "RENDER";
             if(dots > 0 && dots <= VISIBLE_DOTS)
             {
                 //do something someday!
@@ -53,6 +57,7 @@ void PPU::execute()
             }
             break;
         case POST_RENDER:
+            ppu_log << "POSTRENDER";
             if(dots >= LAST_SCANLINE_DOT)
             {
                 scanline++;
@@ -61,9 +66,12 @@ void PPU::execute()
             }
             break;
         case VERTICAL_BLANK:
+            ppu_log <<"VBLANK";
             if(dots == 1 && scanline == VISIBLE_SCANLINES + 1)
             {
                 set_vblank();
+                std::cout << "=====BLANKING PERIOD======\n";
+                ppu_log << "GOT HERE!!";
                 if(PPUCTRL & (1 << 7))
                 {
                     cpu.enqueue_nmi();
@@ -81,6 +89,7 @@ void PPU::execute()
                 even_frame = !even_frame;
             }
     }
+    ppu_log << '\n';
     dots++;
 }
 

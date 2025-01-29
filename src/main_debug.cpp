@@ -21,10 +21,11 @@ int main(int argc, char *argv[])
     init_sdl(sdl);
     sdl.state = PAUSED;
 
-    //TODO: COMMON BUS, maybe move the registers from the ppu to the common bus, idk if its wortH?
+    // TODO: COMMON BUS, maybe move the registers from the ppu to the common bus, idk if its wortH?
     Memory ram(0xFFFF);
     Memory ppu_ram(0x3FFF);
-    Config config = Config("../roms/donkeykong.nes");
+    //Config config = Config("../roms/donkeykong.nes");
+    Config config = Config("../roms/nestest.nes");
     mapper(config, ram, ppu_ram);
     ram[0] = 0xFF;
     CPU cpu = CPU(ram);
@@ -32,7 +33,6 @@ int main(int argc, char *argv[])
     cpu.init();
     PPU ppu(ram, ppu_ram, cpu);
     config.code_segment = cpu.read_abs_address(0xFFFC);
-
     std::cout << "RAM ADDRESS IN main:" << &ram << '\n';
     cpu.ram.hexdump("CPU_ram", 0xFFFF);
     ram.hexdump("PPU_RAM", 0x3FFF);
@@ -45,12 +45,18 @@ int main(int argc, char *argv[])
         {
             for (int i = 0; i <= 100000; i++)
             {
+                int old_cycles = cpu.get_cycles();
                 cpu.execute();
-                //CHECK HOW MANY CYCLES THEN CATCH UP THE PPU!
-                ppu.execute();
-                ppu.execute();
-                ppu.execute();
-                usleep(0.558659218);
+                int new_cycles = cpu.get_cycles();
+                int cycles_elapsed = new_cycles - old_cycles;
+                // CHECK HOW MANY CYCLES THEN CATCH UP THE PPU
+                for (int i = 0; i < cycles_elapsed; i++)
+                {
+                    ppu.execute();
+                    ppu.execute();
+                    ppu.execute();
+                }
+                usleep(0.558659218 /*-time(cpu) - 3*time(ppu)*/);
             }
             goto ENDLOOP;
         }
