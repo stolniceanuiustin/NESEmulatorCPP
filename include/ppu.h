@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "memory.h"
 #include "cpu_header.h"
+#include "virtual_screen.h"
 #define PPUCTRL shared_ram[0x2000]
 #define PPUMASK shared_ram[0x2001]
 #define PPUSTATUS shared_ram[0x2002]
@@ -24,7 +25,50 @@
 #define VBLANK (PPUCTRL & 1 << 7) >> 7;
 typedef uint8_t byte;
 
+union
+{
+    struct 
+    {
+        uint8_t unused : 5;
+        uint8_t sprite_overflow : 1;
+        uint8_t sprite_zero_hit : 1;
+        uint8_t vertical_blank : 1;
+    };
+    uint8_t reg;
+}status;
 
+union
+{
+    struct
+    {
+        uint8_t grayscale : 1;
+        uint8_t render_background_left : 1;
+        uint8_t render_sprites_left : 1;
+        uint8_t render_backgorund : 1;
+        uint8_t render_sprites : 1;
+        uint8_t enhance_red : 1;
+        uint8_t enhance_green : 1;
+        uint8_t enhance_blue : 1;
+    };
+
+    uint8_t reg;
+} mask;
+
+union 
+{
+    struct 
+    {
+        uint8_t nametable_x : 1;
+        uint8_t nametable_y : 1;
+        uint8_t increment_mode : 1;
+        uint8_t pattern_sprite : 1;
+        uint8_t pattern_background : 1;
+        uint8_t sprite_size : 1;
+        uint8_t slave_mode : 1; //UNUSED
+        uint8_t enable_nmi : 1;
+    };
+    uint8_t reg;
+} control;
 
 class PPU
 {
@@ -32,6 +76,8 @@ public:
     CPU &cpu;
     Memory &shared_ram; // SHARED RAM
     Memory &internal_ram; //internal RAM;
+    Screen &screen;
+
     uint16_t current_frame;
     bool odd_frame;
     uint8_t bus;
@@ -40,15 +86,20 @@ public:
     uint16_t x; //FINE x position of the current scroll, sused during rendering alongside v
     uint16_t w; //Togles on each write to PPUSCROLL or PPUADDR, indicating whether it's the first or secnon dwrite. Clears on reads of PPUSTATUS
     //its also claled the write latch or write toggle
+
     uint16_t scanline;
     uint16_t dots;
+
     bool PPUSCROLL_latch = false;
     bool PPUADDR_latch = false;
     bool first_write = false;
+
     uint16_t PPUSCROLL16;
     uint16_t PPUADDR16;
+
     bool even_frame = false;
-    PPU(Memory &ram, Memory &internal_ram, CPU& cpu) : shared_ram(ram), internal_ram(internal_ram), cpu(cpu) {
+
+    PPU(Memory &ram, Memory &internal_ram, CPU& cpu, Screen& screen) : shared_ram(ram), internal_ram(internal_ram), cpu(cpu), screen(screen) {
         current_frame = 0;
         PPUCTRL = 0x00;
         PPUMASK = 0x00;

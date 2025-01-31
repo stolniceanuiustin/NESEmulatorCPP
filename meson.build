@@ -14,7 +14,7 @@ src_files = [
     'src/PPU/PPU.cpp',
     'src/Mappers/mapper0.cpp',
     'src/Mappers/mapper.cpp',
-    'src/SDL_backend.cpp'
+    'src/SDL/SDL_backend.cpp'
 ]
 
 

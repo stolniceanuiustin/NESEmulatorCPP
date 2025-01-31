@@ -1,6 +1,6 @@
 #include "SDL.h"
-#include "include/SDL_backend.h"
-#include "include/emulator_config.h"
+#include "../include/SDL_backend.h"
+#include "../include/emulator_config.h"
 #include <iostream>
 int init_sdl(SDL& sdl)
 {
@@ -53,9 +53,9 @@ bool handle_input(SDL& sdl)
                 return false;
         }
     }
-    SDL_SetRenderDrawColor(sdl.renderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderClear(sdl.renderer);
-    SDL_RenderPresent(sdl.renderer);
+    // SDL_SetRenderDrawColor(sdl.renderer, 0x00, 0x00, 0x00, 0x00);
+    // SDL_RenderClear(sdl.renderer);
+    // SDL_RenderPresent(sdl.renderer);
     return true;
 }
 
@@ -65,3 +65,21 @@ void destroy_sdl(SDL& sdl)
     SDL_DestroyWindow(sdl.window);
     SDL_Quit();
 }
+
+void SDL::render_frame()
+{
+    SDL_Texture* frame = SDL_CreateTexture(renderer, 
+                                        SDL_PIXELFORMAT_RGBA8888, 
+                                        SDL_TEXTUREACCESS_STREAMING, 
+                                        256, 240);  
+    SDL_UpdateTexture(frame, nullptr, screen.pixels, 256*sizeof(uint32_t));
+    SDL_Rect destRect = {0, 0, 256*3, 256*3};
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, frame, nullptr, &destRect);
+    SDL_RenderPresent(renderer);
+    for(int i=0; i<256*240; i++)
+    {
+        std::cout << screen.pixels[i];
+    }
+    SDL_DestroyTexture(frame);
+} 
