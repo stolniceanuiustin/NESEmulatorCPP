@@ -101,6 +101,9 @@ public:
 
     PPU(Memory &ram, Memory &internal_ram, CPU& cpu, Screen& screen) : shared_ram(ram), internal_ram(internal_ram), cpu(cpu), screen(screen) {
         current_frame = 0;
+        status.reg = 0x00;
+        control.reg = 0x00;
+        mask.reg = 0x00;
         PPUCTRL = 0x00;
         PPUMASK = 0x00;
         PPUSTATUS = 0b10100000;

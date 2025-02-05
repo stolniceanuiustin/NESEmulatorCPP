@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "memory.h"
 #include "emulator_config.h"
-
+#include "bus.h"
 #define TEST
 
 
@@ -48,17 +48,21 @@ public:
 	byte O; // overflow //iN DOCUMENTATION IT'S V BUT O is more intuitive
 	byte N; // negative
 	
-
+	BUS* bus;
 	CPU(Memory& ram) : ram(ram)
 	{
 	}
 	void init();
 	bool reset();
 
-	byte ram_at(uint16_t address)
-	{	
-		return ram[address];
+	void connect_bus(BUS* new_bus)
+	{
+		bus = new_bus;
 	}
+	// byte ram_at(uint16_t address)
+	// {	
+	// 	return ram[address];
+	// }
 	byte get_A()
 	{
 		return A;
@@ -193,6 +197,8 @@ public:
 	{
 		pending_nmi = true;
 	}
+
+
 };
 
 

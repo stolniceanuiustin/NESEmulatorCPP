@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
     // TODO: COMMON BUS, maybe move the registers from the ppu to the common bus, idk if its wortH?
     Memory ram(0xFFFF);
     Memory ppu_ram(0x3FFF);
+    
     Screen screen;
 
     SDL sdl(screen);
@@ -35,7 +36,11 @@ int main(int argc, char *argv[])
     CPU cpu = CPU(ram);
     cpu.reset();
     cpu.init();
+
     PPU ppu(ram, ppu_ram, cpu, screen);
+    BUS bus(cpu, ppu);
+    cpu.connect_bus(&bus);
+    ppu.connect_bus(&bus);
 
     config.code_segment = cpu.read_abs_address(0xFFFC);
     std::cout << "RAM ADDRESS IN main:" << &ram << '\n';

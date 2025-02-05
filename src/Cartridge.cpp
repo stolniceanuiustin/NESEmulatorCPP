@@ -1,5 +1,4 @@
-#include "../include/mapper.h"
-#include <iostream>
+#include "../include/cartridge.h"
 
 Nametable_Map nametablee;
 void set_mapping(uint16_t top_left, uint16_t top_right, uint16_t bottom_left, uint16_t bottom_right)
