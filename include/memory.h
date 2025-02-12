@@ -5,7 +5,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "ppu.h"
 typedef uint8_t byte;
 
 class Memory
@@ -13,9 +12,8 @@ class Memory
 private:
     byte *memory;
     int size;
-    PPU& ppu;
 public:
-    Memory(int size, PPU& ppu) : size(size), ppu(ppu);
+    Memory(int size) : size(size)
     {
         if (size <= 65536)
         {
@@ -30,10 +28,7 @@ public:
     Memory &operator=(const Memory &) = delete;
     byte &operator[](uint16_t address)
     {
-        if (size == 65536)
-        {
-            // this means CPU memory space
-            if (address >= 0 && address <= 0xFFFF)
+            if (address >= 0 && address < size)
             {
                 return memory[address];
             }
@@ -42,7 +37,6 @@ public:
                 std::cerr << "Out of bounds index for memory read\n";
                 exit(-1);
             }
-        }
     }
     byte *get_address(uint16_t address)
     {

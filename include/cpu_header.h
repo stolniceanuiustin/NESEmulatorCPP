@@ -6,9 +6,8 @@
 #include "bus.h"
 #define TEST
 
-
+class BUS;
 typedef uint8_t byte;
-
 
 struct Mem
 {
@@ -59,10 +58,10 @@ public:
 	{
 		bus = new_bus;
 	}
-	// byte ram_at(uint16_t address)
-	// {	
-	// 	return ram[address];
-	// }
+	byte ram_at(uint16_t address)
+	{	
+		return read(address);
+	}
 	byte get_A()
 	{
 		return A;
@@ -100,6 +99,8 @@ public:
 		PC++;
 		return val;
 	}
+	byte read(uint16_t address);
+	void write(uint16_t address, byte data);
 
 	uint16_t read_address_from_pc();
 	uint16_t read_address(byte offset);

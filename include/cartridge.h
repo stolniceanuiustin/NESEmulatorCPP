@@ -1,22 +1,48 @@
 #ifndef CARTRIDGE_HEADERGUARD
 #define CARTRIDGE_HEADERGUARD
 #include <stdint.h>
+#include <memory>
 #include "emulator_config.h"
 #include "memory.h"
+#include "mapper.h"
 typedef uint8_t byte;
 
-class Cartridge
+struct Nametable_Map
+{
+    uint16_t map[4];
+};
+
+class CARTRIDGE
 {
 private:
     Config config;
-    byte PRGrom[0x8000];
-    byte CHRrom[0x4000];
+    Memory PRGrom;
+    Memory CHRrom;
+    std::shared_ptr<Mapper> p_mapper;
 public: 
-    Cartridge(Config config) : config(config)
+    CARTRIDGE(Config config) : config(config), PRGrom(0x8000), CHRrom(0x4000)
     {};
-    bool read_file(Config &config, Memory& ram, Memory& ppu_ram);
-
-}
+    bool read_file();
+    byte* get_PRGrom()
+    {
+        return &PRGrom[0x0000];
+    }
+    byte* get_CHRrom()
+    {
+        return &CHRrom[0x0000];
+    }
+    byte get_chr_size()
+    {
+        return p_mapper->chr_banks;
+    }
+    byte get_prg_size()
+    {
+        return p_mapper->prg_banks;
+    }
+    
+    byte cpu_read(uint16_t addr);
+    void cpu_write(uint16_t addr, byte data);
+};
 
 
 

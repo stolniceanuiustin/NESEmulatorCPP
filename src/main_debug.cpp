@@ -7,6 +7,8 @@
 #include "../include/unittest.h"
 #include "../include/ppu.h"
 #include "../include/mapper.h"
+#include "../include/bus.h"
+#include "../include/cartridge.h"
 
 using std::cout;
 
@@ -31,22 +33,29 @@ int main(int argc, char *argv[])
 
     //Config config = Config("../roms/donkeykong.nes");
     Config config = Config("../roms/nestest.nes");
-    mapper(config, ram, ppu_ram);
+    CARTRIDGE cartridge(config);
+    cartridge.read_file();
 
     CPU cpu = CPU(ram);
     cpu.reset();
     cpu.init();
 
     PPU ppu(ram, ppu_ram, cpu, screen);
-    BUS bus(cpu, ppu);
+    BUS bus(cpu, ppu, cartridge);
     cpu.connect_bus(&bus);
     ppu.connect_bus(&bus);
 
     config.code_segment = cpu.read_abs_address(0xFFFC);
-    std::cout << "RAM ADDRESS IN main:" << &ram << '\n';
-    cpu.ram.hexdump("CPU_ram", 0xFFFF);
-    ram.hexdump("PPU_RAM", 0x3FFF);
+    // cpu.ram.hexdump("CPU_ram", 0xFFFF);
+    // ram.hexdump("PPU_RAM", 0x3FFF);
+    cpu.write(0x8001, 0xFF);
+    cpu.write(0x800, 0xFF);
+    cpu.write(0x2000, 0xFF);
 
+    cout << (int)(*(cartridge.get_PRGrom() + 1)) << '\n';
+    cout << (int)bus.cpu_ram[0x0000] << '\n';
+    cout << (int)ppu.get_control() << '\n';
+    cout << "===================\n" << std::endl;
     while (1)
     {
         handle_input(sdl);

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include "../include/ppu.h"
+#include "../include/bus.h"
 #define DEBUG
 
 using std::cout;
@@ -17,7 +18,14 @@ const uint16_t null_address = 0;
 //     // sleep(CLOCK_TIME);
 //     return (*address);
 // }
-
+byte CPU::read(uint16_t address)
+{
+    return bus->cpu_read(address);
+}
+void CPU::write(uint16_t address, byte data)
+{
+    bus->cpu_write(address, data);
+}
 void CPU::push(byte x)
 {
     // Stack overflow should handle itself

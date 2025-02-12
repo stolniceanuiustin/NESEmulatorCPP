@@ -2,18 +2,19 @@
 #define HEADERGUARD_PPU
 
 #include <stdint.h>
-#include "memory.h"
-#include "cpu_header.h"
 #include "virtual_screen.h"
-#define PPUCTRL shared_ram[0x2000]
-#define PPUMASK shared_ram[0x2001]
-#define PPUSTATUS shared_ram[0x2002]
-#define OAMADDR shared_ram[0x2003]
-#define OAMDATA shared_ram[0x2004]
-#define PPUSCROLL shared_ram[0x2005]
-#define PPUADDR shared_ram[0x2006]
-#define PPUDATA shared_ram[0x2007]
-#define OAMDMA shared_ram[0x4014]
+class BUS;
+class Memory;
+class CPU;
+// #define PPUCTRL shared_ram[0x2000]
+// #define PPUMASK shared_ram[0x2001]
+// #define PPUSTATUS shared_ram[0x2002]
+// #define OAMADDR shared_ram[0x2003]
+// #define OAMDATA shared_ram[0x2004]
+// #define PPUSCROLL shared_ram[0x2005]
+// #define PPUADDR shared_ram[0x2006]
+// #define PPUDATA shared_ram[0x2007]
+// #define OAMDMA shared_ram[0x4014]
 
 #define VISIBLE_SCANLINES 240
 #define VISIBLE_DOTS 256
@@ -80,7 +81,8 @@ public:
 
     uint16_t current_frame;
     bool odd_frame;
-    uint8_t bus;
+    BUS* bus;
+    //uint8_t bus;
     uint16_t v; //in render = scrolling position, outside of rendering = the current VRAM address
     uint16_t t; //During rendering it does something. Outsdie of rendering, holds the VRAM address before transfering it to v
     uint16_t x; //FINE x position of the current scroll, sused during rendering alongside v
@@ -101,16 +103,13 @@ public:
 
     PPU(Memory &ram, Memory &internal_ram, CPU& cpu, Screen& screen) : shared_ram(ram), internal_ram(internal_ram), cpu(cpu), screen(screen) {
         current_frame = 0;
-        status.reg = 0x00;
+        status.reg = 0b10100000;
         control.reg = 0x00;
         mask.reg = 0x00;
-        PPUCTRL = 0x00;
-        PPUMASK = 0x00;
-        PPUSTATUS = 0b10100000;
-        OAMADDR = 0x00;
-        PPUSCROLL = 0x00;
-        PPUADDR = 0x00;
-        PPUDATA = 0x00;
+        // OAMADDR = 0x00;
+        // PPUSCROLL = 0x00;
+        // PPUADDR = 0x00;
+        // PPUDATA = 0x00;
         odd_frame = false;
         bus = 0;
         v = 0;
@@ -128,7 +127,13 @@ public:
     void set_vblank();
     void clear_vblank();
     byte get_status();
-
+    byte get_control();
+    void connect_bus(BUS* new_bus)
+    {
+        bus = new_bus;
+    }
+    byte read_from_cpu(byte addr);
+    void write_from_cpu(byte addr, byte data);
 private:
     enum State
     {

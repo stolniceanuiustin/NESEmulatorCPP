@@ -6,11 +6,32 @@
 #include "emulator_config.h"
 #include "memory.h"
 
-bool mapper(Config &config, Memory& ram, Memory& ppu_ram);
-bool mapper0(Config &config, Memory& ram, Memory& ppu_ram, NESHeader header, std::ifstream &rom);
-struct Nametable_Map
+class CARTRIDGE;
+
+bool mapper0(Config &config, CARTRIDGE &cartridge, std::ifstream &rom);
+class Mapper
 {
-    uint16_t map[4];
+public:
+    uint8_t prg_banks;
+    uint8_t chr_banks;
+
+public:
+    Mapper(uint8_t prg_banks, uint8_t chr_banks) : prg_banks(prg_banks), chr_banks(chr_banks) {};
+    virtual uint16_t cpu_map_read(uint16_t addr) = 0;
+    virtual uint16_t cpu_map_write(uint16_t addr) = 0;
+    virtual uint16_t ppu_map_read(uint16_t addr) = 0;
+    virtual uint16_t ppu_map_write(uint16_t addr) = 0;
+};
+
+//SOME MAPPERS MIGHT DIFFER FROM CPU READ AND WRITE
+class Mapper0 : public Mapper
+{
+public:
+    Mapper0(uint8_t prg_banks, uint8_t chr_banks) : Mapper(prg_banks, chr_banks) {};
+    uint16_t cpu_map_read(uint16_t addr) override;
+    uint16_t cpu_map_write(uint16_t addr) override;
+    uint16_t ppu_map_read(uint16_t addr) override;
+    uint16_t ppu_map_write(uint16_t addr) override;
 };
 
 #endif

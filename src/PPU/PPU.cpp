@@ -1,5 +1,6 @@
 #include "../include/ppu.h"
 #include "../include/emulator_config.h"
+#include "../include/cpu_header.h"
 #include <iostream>
 #include <fstream>
 std::ofstream ppu_log("ppu_log.log");
@@ -10,18 +11,68 @@ void clear_status_register(byte &x)
 
 void PPU::reset()
 {
-    PPUCTRL = 0x0000;
-    PPUMASK = 0x0000;
-    PPUSTATUS = PPUSTATUS & 0b10000000;
-    PPUSCROLL = 0x0000;
-    PPUDATA = 0x00;
+    control.reg = 0x0000;
+    mask.reg = 0x0000;
+    status.reg = status.reg & 0b10000000;
 }
 byte PPU::get_status()
 {
-    byte status = PPUSTATUS & 0b11100000;
+    byte state = status.reg & 0b11100000;
     clear_vblank(); // VBLANK is cleared whenever PPUSTATUS IS READ;
     first_write = true;
-    return status;
+    return state;
+}
+byte PPU::get_control()
+{
+    return control.reg;
+}
+byte PPU::read_from_cpu(byte addr)
+{
+    switch(addr)
+    {
+        case 0:
+            return control.reg;
+        case 1:
+            return mask.reg;
+        case 2:
+            return status.reg;
+        case 3:
+            return 0; //OAM ADDR
+        case 4:
+            return 0; //OAMDATA
+        case 5:
+            return 0; //PPUSCROLL
+        case 6:
+            return 0; ///PPUADDR
+        case 7:
+            return 0; //PPUDATA
+    }
+}
+
+void PPU::write_from_cpu(byte addr, byte data)
+{
+    switch(addr)
+    {
+        case 0:
+            control.reg = data;
+            break;
+        case 1:
+            mask.reg = data;
+            break;
+        case 2:
+            status.reg = data;
+            break;
+        case 3:
+            return; //OAM ADDR
+        case 4:
+            return; //OAMDATA
+        case 5:
+            return; //PPUSCROLL
+        case 6:
+            return; ///PPUADDR
+        case 7:
+            return; //PPUDATA
+    }
 }
 void PPU::execute()
 {
@@ -31,7 +82,7 @@ void PPU::execute()
         ppu_log << "PRERENDER";
         if (dots == 1)
         {
-            PPUSTATUS &= 0b00011111;
+            //PPUSTATUS &= 0b00011111;
         }
         if (dots >= LAST_SCANLINE_DOT)
         {
@@ -78,7 +129,7 @@ void PPU::execute()
             screen.RENDER_ENABLED = true;
             std::cout << "=====BLANKING PERIOD======\n";
             ppu_log << "GOT HERE!!";
-            if (PPUCTRL & (1 << 7))
+            if (control.enable_nmi == 1)
             {
                 cpu.enqueue_nmi();
             }
@@ -101,10 +152,10 @@ void PPU::execute()
 
 void PPU::set_vblank()
 {
-    PPUSTATUS |= 1 << 7;
+    status.vertical_blank = 1;
 }
 
 void PPU::clear_vblank()
 {
-    PPUSTATUS &= ~(1 << 7);
+    status.vertical_blank = 0;
 }

@@ -4,29 +4,54 @@
 #include "../include/emulator_config.h"
 #include "../include/memory.h"
 #include "../include/mapper.h"
-bool mapper0(Config &config, Memory& ram, Memory& ppu_ram, NESHeader header, std::ifstream &rom)
+#include "../include/cartridge.h"
+bool mapper0(Config &config, CARTRIDGE& cartridge, std::ifstream &rom)
 {
-    std::cout << "RAM ADDRESS IN mapper0:" << &ram << '\n';
-    int prg_size = header.prg_size * 16 * 1024;
-    int chr_size = header.chr_size * 8 * 1024;
-
-    rom.read(reinterpret_cast<char *>(&ram[0x8000]), prg_size);
+    int prg_size = cartridge.get_prg_size() * 16 * 1024;
+    int chr_size = cartridge.get_chr_size() * 8 * 1024;
+    std::cout << "GOT HERE" << std::flush;
+    rom.read(reinterpret_cast<char *>(cartridge.get_PRGrom()), prg_size);
     if (prg_size == 0x4000)
     {
-        std::memcpy(&ram[0xC000], &ram[0x8000], 0x4000);
+        std::memcpy(cartridge.get_PRGrom() + 0x4000, cartridge.get_PRGrom(), 0x4000);
     }
     else
     {
-        rom.read(reinterpret_cast<char *>(&ram[0x8000]), 0xFFFF);
+        rom.read(reinterpret_cast<char *>(cartridge.get_PRGrom()), 0x8000);
         rom.close();
     }
     if(chr_size > 0 && chr_size <= 0x3FFF)
     {
-        rom.read(reinterpret_cast<char *>(&ppu_ram[0x0000]), chr_size);
+        rom.read(reinterpret_cast<char *>(cartridge.get_CHRrom()), chr_size);
     }
     else
     {
         std::cerr << "FAILED LOADING CHR ROM;\n";
     }
     return true;
+}
+
+uint16_t Mapper0::cpu_map_read(uint16_t addr)
+{
+    if(addr >= 0x8000 && addr <= 0xFFFF)
+    {
+        return addr & (0x7FFF);
+    }
+    else return 0;
+}
+uint16_t Mapper0::cpu_map_write(uint16_t addr)
+{
+    if(addr >= 0x8000 && addr <= 0xFFFF)
+    {
+        return addr & 0x7FFF;
+    }
+    else return 0;
+}
+uint16_t Mapper0::ppu_map_read(uint16_t addr)
+{
+    return 0;
+}
+uint16_t Mapper0::ppu_map_write(uint16_t addr) 
+{
+    return 0;
 }

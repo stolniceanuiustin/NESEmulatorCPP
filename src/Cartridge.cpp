@@ -1,5 +1,6 @@
 #include "../include/cartridge.h"
-
+#include "../include/mapper.h"
+#include <iostream>
 Nametable_Map nametablee;
 void set_mapping(uint16_t top_left, uint16_t top_right, uint16_t bottom_left, uint16_t bottom_right)
 {
@@ -9,9 +10,8 @@ void set_mapping(uint16_t top_left, uint16_t top_right, uint16_t bottom_left, ui
     nametablee.map[3] = bottom_right;
 }
 
-bool read_header(Config &config, Memory& ram, Memory& ppu_ram)
+bool CARTRIDGE::read_file()
 {
-    std::cout << "RAM ADDRESS IN mapper:" << &ram << '\n';
     std::ifstream rom(config.rom_name, std::ios::binary);
     if (!rom)
     {
@@ -42,7 +42,20 @@ bool read_header(Config &config, Memory& ram, Memory& ppu_ram)
     config.nametable_arrangement = (nametable_type == 1) ? 1 : 0;
     if(mapper_type == 0)
     {
-        mapper0(config, ram, ppu_ram, header, rom);
+        //TODO CHECK THIS ASAP
+        p_mapper = std::make_shared<Mapper0>(header.prg_size, header.chr_size);
+        mapper0(config, *this, rom);
     }
     return true;
+}
+
+byte CARTRIDGE::cpu_read(uint16_t addr)
+{
+    uint16_t mapped_addr = p_mapper->cpu_map_read(addr);
+    return PRGrom[mapped_addr];
+}
+void CARTRIDGE::cpu_write(uint16_t addr, byte data)
+{
+    uint16_t mapped_addr = p_mapper->cpu_map_write(addr);
+    PRGrom[mapped_addr] = data;
 }
