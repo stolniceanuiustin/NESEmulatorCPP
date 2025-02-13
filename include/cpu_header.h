@@ -28,7 +28,6 @@ class CPU
 {
 public:
 	struct Instruction inst;
-	Memory& ram;
 public:
 	//STACK IS at page 1 0100 - 01FF, sp goes from 
 	byte A; // Registrii Accumulator, X, Y
@@ -48,9 +47,10 @@ public:
 	byte N; // negative
 	
 	BUS* bus;
-	CPU(Memory& ram) : ram(ram)
+	CPU() 
 	{
-	}
+	};
+
 	void init();
 	bool reset();
 
@@ -93,12 +93,7 @@ public:
 	byte pack_flags();
 	void unpack_flags(byte flags);
 
-	byte read_pc()
-	{
-		byte val = ram[PC];
-		PC++;
-		return val;
-	}
+	byte read_pc();
 	byte read(uint16_t address);
 	void write(uint16_t address, byte data);
 

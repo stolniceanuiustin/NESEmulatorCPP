@@ -21,7 +21,7 @@ public:
     void cpu_write(uint16_t addr, byte data);
     void ppu_write(uint16_t addr, byte data);
     byte cpu_read(uint16_t addr);
-
+    void reset();
     void hexdump();
 };
 

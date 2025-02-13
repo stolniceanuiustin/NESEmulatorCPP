@@ -38,27 +38,25 @@ public:
                 exit(-1);
             }
     }
-    byte *get_address(uint16_t address)
+
+    void reset()
     {
-        return &memory[address];
+        std::memset(memory, 0, size);
     }
-    void cpu_write(uint16_t address, byte src)
-    {
-        if (address >= 0 && address <= 0xFFFF)
-        {
-            memory[address] = src;
-        }
-        else
-        {
-            std::cerr << "Out of bounds index for memory write\n";
-            exit(-1);
-        }
-    }
+
+
     void hexdump(char *filename, uint16_t size)
     {
         FILE *file = fopen(filename, "wb");
-        fwrite(memory, sizeof(byte), size, file);
-        fclose(file);
+        if(file)
+        {
+            fwrite(memory, sizeof(byte), size, file);
+            fclose(file);
+        }
+        else
+        {
+            std::cout << "Could not open file succesfuly for hexdump\n" << std::flush;
+        }
     }
 };
 

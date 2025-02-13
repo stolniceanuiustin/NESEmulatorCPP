@@ -26,10 +26,18 @@ void CPU::write(uint16_t address, byte data)
 {
     bus->cpu_write(address, data);
 }
+
+byte CPU::read_pc()
+{
+    byte val = read(PC);
+    PC++;
+    return val;
+}
+
 void CPU::push(byte x)
 {
     // Stack overflow should handle itself
-    ram[0x0100 + SP] = x;
+    write(0x0100 + SP, x);
     SP--;
 }
 
@@ -37,17 +45,17 @@ void CPU::push(byte x)
 
 void CPU::push_address(uint16_t address)
 {
-    ram[0x0100 + SP] = (address & 0xFF00) >> 8;
+    write(0x0100 + SP, (address & 0xFF00) >> 8);
     SP--;
 
-    ram[0x0100 + SP] = address & 0x00FF;
+    write(0x0100 + SP, address & 0x00FF);
     SP--;
 }
 
 byte CPU::pop()
 {
     SP++;
-    byte to_return = ram[0x0100 + SP];
+    byte to_return = read(0x0100 + SP);
     return to_return;
 }
 uint16_t CPU::pop_address()
@@ -61,18 +69,18 @@ uint16_t CPU::pop_address()
 
 uint16_t CPU::read_address(byte offset)
 {
-    uint16_t val = ram[offset + 1]; // little endian
+    uint16_t val = read(offset+1); // little endian
     val <<= 8;
-    val |= ram[offset];
+    val |= read(offset);
     return val;
 }
 
 // The difference between read_address and read_abs_address is that read_abs_address takes a 16bit offset
 uint16_t CPU::read_abs_address(uint16_t offset)
 {
-    uint16_t val = ram[offset + 1]; // little endian
+    uint16_t val = read(offset+1); // little endian
     val <<= 8;
-    val |= ram[offset];
+    val |= read(offset);
     return val;
 }
 
@@ -97,8 +105,7 @@ bool CPU::reset()
     B = 0;
     O = 0;
     N = 0;
-    for (int i = 0; i < 0x8000; i++)
-        ram[i] = 0;
+    //bus->reset();
     cycles = 0;
     return true;
 }

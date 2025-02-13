@@ -75,8 +75,6 @@ class PPU
 {
 public:
     CPU &cpu;
-    Memory &shared_ram; // SHARED RAM
-    Memory &internal_ram; //internal RAM;
     Screen &screen;
 
     uint16_t current_frame;
@@ -101,7 +99,7 @@ public:
 
     bool even_frame = false;
 
-    PPU(Memory &ram, Memory &internal_ram, CPU& cpu, Screen& screen) : shared_ram(ram), internal_ram(internal_ram), cpu(cpu), screen(screen) {
+    PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen) {
         current_frame = 0;
         status.reg = 0b10100000;
         control.reg = 0x00;

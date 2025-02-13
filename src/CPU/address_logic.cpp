@@ -16,9 +16,9 @@ uint16_t CPU::compute_addr_mode_g1(bool &page_cross)
         byte zeropage_adr;
         zeropage_adr = read_pc() + X;
         // address = read_address(address);
-        byte low_byte = ram[zeropage_adr];
+        byte low_byte = read(zeropage_adr);
         // IT DOES NOT WRAP ARROUND BY ITS OWN FOR SOME REASON;
-        byte high_byte = ram[((zeropage_adr + 1) & 0x00FF)];
+        byte high_byte = read(((zeropage_adr + 1) & 0x00FF));
         address = (high_byte << 8) | low_byte;
         break;
     }
@@ -43,8 +43,8 @@ uint16_t CPU::compute_addr_mode_g1(bool &page_cross)
     case 0x04: //(zero page), Y; Takes an address from zero page as a pointer then adds Y to that address
     {          // CAN CROSS PAGES
         uint16_t zeropage_adr = read_pc();
-        byte low_byte = ram[zeropage_adr];
-        byte high_byte = ram[(zeropage_adr + 1) & 0x00FF];
+        byte low_byte = read(zeropage_adr);
+        byte high_byte = read((zeropage_adr + 1) & 0x00FF);
         address = (high_byte << 8) | low_byte;
         uint16_t aux_addr = address;
         address += Y;

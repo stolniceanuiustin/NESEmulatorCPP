@@ -9,7 +9,7 @@ bool mapper0(Config &config, CARTRIDGE& cartridge, std::ifstream &rom)
 {
     int prg_size = cartridge.get_prg_size() * 16 * 1024;
     int chr_size = cartridge.get_chr_size() * 8 * 1024;
-    std::cout << "GOT HERE" << std::flush;
+    std::cout << "READING FILE WITH MAPPER0\n" << std::flush;
     rom.read(reinterpret_cast<char *>(cartridge.get_PRGrom()), prg_size);
     if (prg_size == 0x4000)
     {

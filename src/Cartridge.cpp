@@ -43,6 +43,7 @@ bool CARTRIDGE::read_file()
     if(mapper_type == 0)
     {
         //TODO CHECK THIS ASAP
+        std::cout << "Using MAPPERTYPE = 0" << std::endl;
         p_mapper = std::make_shared<Mapper0>(header.prg_size, header.chr_size);
         mapper0(config, *this, rom);
     }

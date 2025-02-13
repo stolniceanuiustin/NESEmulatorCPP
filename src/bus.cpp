@@ -53,6 +53,12 @@ byte BUS::cpu_read(uint16_t addr)
     }
 }
 
+void BUS::reset()
+{
+    cpu_ram.reset();
+    ppu_ram.reset();
+}
+
 void BUS::hexdump()
 {
     cpu_ram.hexdump("cpu_hexdump", 0x07FF);
