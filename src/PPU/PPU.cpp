@@ -14,6 +14,12 @@ void PPU::reset()
     control.reg = 0x0000;
     mask.reg = 0x0000;
     status.reg = status.reg & 0b10000000;
+    PPU_BUFFER = 0;
+    PPUSCROLL_latch = false;
+    PPUADDR_latch = false;
+    first_write = false;
+    vaddr.reg = 0x0000;
+    taddr.reg = 0x0000;
 }
 byte PPU::get_status()
 {
@@ -26,52 +32,94 @@ byte PPU::get_control()
 {
     return control.reg;
 }
-byte PPU::read_from_cpu(byte addr)
+byte PPU::read_from_cpu(byte addr, bool read_only)
 {
-    switch(addr)
+    byte data;
+    if (read_only == true)
     {
+        switch (addr)
+        {
         case 0:
-            return control.reg;
+            data = control.reg;
+            break;
         case 1:
-            return mask.reg;
+            data = mask.reg;
+            break;
         case 2:
-            return status.reg;
+            data = status.reg;
+            break;
         case 3:
-            return 0; //OAM ADDR
+            data = OAMADDR;
+            break;
         case 4:
-            return 0; //OAMDATA
+            data = OAMDATA; // OAMDATA
         case 5:
-            return 0; //PPUSCROLL
+            return -1;
         case 6:
-            return 0; ///PPUADDR
+            return -1; /// PPUADDR
         case 7:
-            return 0; //PPUDATA
+            return -1;
+        }
     }
+    else if(read_only == false) //default mode
+    {
+        switch(addr)
+        {
+            case 0:
+                break; //control not readable usually
+            case 1:
+                break; //mask not readable usually
+            case 2:
+                status.reg & 0b11100000 | PPU_BUFFER & 0b00011111; //last 5 bits of the last ppu bus transaction
+                status.vertical_blank = 0;
+                ppuaddr_latch = false;
+            case 3:
+                //oam addr;
+                break;
+            case 4:
+                //oam data;
+                break;
+            case 5:
+                //scroll is not readable
+                break;
+            case 6:
+                //ppu address is not readable
+                break;
+            case 7://reads from memory but it is delayed one cycle 
+                data = PPU_BUFFER;
+                PPU_BUFFER = ppu_read(); //TODO: to be implemented
+                if(vaddr.reg >= 0x3F00)
+                    data = PPU_BUFFER; //separate memory on the ppu?
+                vaddr.reg += (control.increment_mode ? 32 : 1)
+                break;
+        }
+    }
+    return data;
 }
 
 void PPU::write_from_cpu(byte addr, byte data)
 {
-    switch(addr)
+    switch (addr)
     {
-        case 0:
-            control.reg = data;
-            break;
-        case 1:
-            mask.reg = data;
-            break;
-        case 2:
-            status.reg = data;
-            break;
-        case 3:
-            return; //OAM ADDR
-        case 4:
-            return; //OAMDATA
-        case 5:
-            return; //PPUSCROLL
-        case 6:
-            return; ///PPUADDR
-        case 7:
-            return; //PPUDATA
+    case 0:
+        control.reg = data;
+        break;
+    case 1:
+        mask.reg = data;
+        break;
+    case 2:
+        status.reg = data;
+        break;
+    case 3:
+        return; // OAM ADDR
+    case 4:
+        return; // OAMDATA
+    case 5:
+        return; // PPUSCROLL
+    case 6:
+        return; /// PPUADDR
+    case 7:
+        return; // PPUDATA
     }
 }
 void PPU::execute()
@@ -82,7 +130,7 @@ void PPU::execute()
         ppu_log << "PRERENDER";
         if (dots == 1)
         {
-            //PPUSTATUS &= 0b00011111;
+            // PPUSTATUS &= 0b00011111;
         }
         if (dots >= LAST_SCANLINE_DOT)
         {

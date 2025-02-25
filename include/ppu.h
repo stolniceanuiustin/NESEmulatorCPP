@@ -71,6 +71,20 @@ union
     uint8_t reg;
 } control;
 
+union loopy
+{
+    struct
+    {
+        uint16_t coarse_x : 5;
+        uint16_t coarse_y : 5;
+        uint16_t nametable_x : 1;
+        uint16_t nametable_y : 1;
+        uint16_t fine_y : 3;
+        uint16_t unused : 1;
+    }
+    uint16_t reg = 0x0000;
+}
+
 class PPU
 {
 public:
@@ -81,8 +95,8 @@ public:
     bool odd_frame;
     BUS* bus;
     //uint8_t bus;
-    uint16_t v; //in render = scrolling position, outside of rendering = the current VRAM address
-    uint16_t t; //During rendering it does something. Outsdie of rendering, holds the VRAM address before transfering it to v
+    loopy vaddr; //in render = scrolling position, outside of rendering = the current VRAM address
+    loopy taddr; //During rendering it does something. Outsdie of rendering, holds the VRAM address before transfering it to v
     uint16_t x; //FINE x position of the current scroll, sused during rendering alongside v
     uint16_t w; //Togles on each write to PPUSCROLL or PPUADDR, indicating whether it's the first or secnon dwrite. Clears on reads of PPUSTATUS
     //its also claled the write latch or write toggle
@@ -96,7 +110,9 @@ public:
 
     uint16_t PPUSCROLL16;
     uint16_t PPUADDR16;
-
+    byte PPUDATA;
+    byte OAMDMA;
+    byte PPU_BUFFER;
     bool even_frame = false;
 
     PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen) {
@@ -117,6 +133,9 @@ public:
     }
     
     byte OAM[256];
+    byte OAMADDR;
+    byte OAMDATA;
+    byte PPUSCROLL;
 
     void reset();
     void execute();

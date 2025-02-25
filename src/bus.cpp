@@ -39,7 +39,7 @@ byte BUS::cpu_read(uint16_t addr)
     }
     else if(addr >= 0x2000 && addr <= 0x3FFF)
     {
-        return ppu.read_from_cpu(addr & 0x0007);
+        return ppu.read_from_cpu(addr & 0x0007, false);
     }
     else if(addr >= 0x4000 && addr <= 0x4015)
     {
