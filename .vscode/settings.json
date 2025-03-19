@@ -50,10 +50,16 @@
         "typeinfo": "cpp",
         "ctime": "cpp",
         "iomanip": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp"
     },
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
         "cppcoreguidelines-avoid-magic-numbers",
         "cppcoreguidelines-macro-to-enum"
-    ]
+    ],
+    "C_Cpp.default.compilerPath": "/usr/bin/g++-11"
 }

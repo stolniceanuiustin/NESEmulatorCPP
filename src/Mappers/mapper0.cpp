@@ -49,8 +49,9 @@ uint16_t Mapper0::cpu_map_write(uint16_t addr)
 }
 uint16_t Mapper0::ppu_map_read(uint16_t addr)
 {
-    return 0;
+    return addr;
 }
+//ONLY FOR games with CHRram, will have to implement later; TODO
 uint16_t Mapper0::ppu_map_write(uint16_t addr) 
 {
     return 0;

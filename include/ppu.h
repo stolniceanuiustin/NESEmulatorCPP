@@ -3,9 +3,13 @@
 
 #include <stdint.h>
 #include "virtual_screen.h"
+#include "cartridge.h"
+#include "log.h"
+class CARTRIDGE;
 class BUS;
 class Memory;
 class CPU;
+class LOG;
 // #define PPUCTRL shared_ram[0x2000]
 // #define PPUMASK shared_ram[0x2001]
 // #define PPUSTATUS shared_ram[0x2002]
@@ -15,7 +19,6 @@ class CPU;
 // #define PPUADDR shared_ram[0x2006]
 // #define PPUDATA shared_ram[0x2007]
 // #define OAMDMA shared_ram[0x4014]
-
 #define VISIBLE_SCANLINES 240
 #define VISIBLE_DOTS 256
 #define FRAME_END_SCANLINE 261
@@ -81,15 +84,16 @@ union loopy
         uint16_t nametable_y : 1;
         uint16_t fine_y : 3;
         uint16_t unused : 1;
-    }
+    };
     uint16_t reg = 0x0000;
-}
+};
 
 class PPU
 {
 public:
     CPU &cpu;
     Screen &screen;
+    CARTRIDGE* cartridge;
 
     uint16_t current_frame;
     bool odd_frame;
@@ -115,7 +119,7 @@ public:
     byte PPU_BUFFER;
     bool even_frame = false;
 
-    PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen) {
+    PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen), ppu_log("ppu_log.txt"){
         current_frame = 0;
         status.reg = 0b10100000;
         control.reg = 0x00;
@@ -126,16 +130,21 @@ public:
         // PPUDATA = 0x00;
         odd_frame = false;
         bus = 0;
-        v = 0;
+        //v = 0;
         scanline = 0;
         dots = 0;
         pipeline_state = PRE_RENDER;
+        
     }
     
     byte OAM[256];
     byte OAMADDR;
     byte OAMDATA;
     byte PPUSCROLL;
+
+    byte nametable[2][0x03FF]; //mirrored
+    byte patterntable[2][0x0FFF];
+    byte pallete_table[32];
 
     void reset();
     void execute();
@@ -145,12 +154,22 @@ public:
     void clear_vblank();
     byte get_status();
     byte get_control();
+    //For main bus
     void connect_bus(BUS* new_bus)
     {
         bus = new_bus;
     }
-    byte read_from_cpu(byte addr);
+
+    void connect_cartridge(CARTRIDGE* new_cartridge)
+    {
+        cartridge = new_cartridge;
+    }
+    byte read_from_cpu(byte addr, bool read_only);
     void write_from_cpu(byte addr, byte data);
+    //for internal ppu bus
+    byte ppu_read(uint16_t addr, bool read_only = false);
+    void ppu_write(uint16_t addr, byte data);
+    LOG ppu_log;
 private:
     enum State
     {

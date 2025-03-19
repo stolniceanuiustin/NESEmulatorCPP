@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     BUS bus(cpu, ppu, cartridge);
     cpu.connect_bus(&bus);
     ppu.connect_bus(&bus);
-    
+    ppu.connect_cartridge(&cartridge);
     cpu.reset();
     cpu.init();
     bus.hexdump();

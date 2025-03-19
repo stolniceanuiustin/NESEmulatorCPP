@@ -14,7 +14,8 @@ src_files = [
     'src/Mappers/mapper0.cpp',
     'src/SDL/SDL_backend.cpp',
     'src/Cartridge.cpp',
-    'src/bus.cpp'
+    'src/bus.cpp',
+    'src/Log.cpp'
 ]
 
 

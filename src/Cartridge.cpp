@@ -32,10 +32,12 @@ bool CARTRIDGE::read_file()
     {
         //Vertical mirroring
         std::cout << "Using vertical mirroring\n";
+        mirroring = VERTICAL;
         set_mapping(0, 0x400, 0, 0x400);
     }
     else if(nametable_type == 1)
     {
+        mirroring = HORIZONTAL;
         std::cout << "Using horizontal mirroring\n";
         set_mapping(0, 0, 0x400, 0x400);
     }
@@ -59,4 +61,16 @@ void CARTRIDGE::cpu_write(uint16_t addr, byte data)
 {
     uint16_t mapped_addr = p_mapper->cpu_map_write(addr);
     PRGrom[mapped_addr] = data;
+}
+
+byte CARTRIDGE::ppu_read(uint16_t addr)
+{
+    uint16_t mapped_addr = p_mapper->ppu_map_read(addr);
+    return CHRrom[mapped_addr];
+}
+
+void CARTRIDGE::ppu_write(uint16_t addr, byte data)
+{
+    uint16_t mapped_addr = p_mapper->ppu_map_write(addr);
+    CHRrom[mapped_addr] = addr;
 }

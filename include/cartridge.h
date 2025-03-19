@@ -12,6 +12,12 @@ struct Nametable_Map
     uint16_t map[4];
 };
 
+enum MIRROR
+{
+    VERTICAL,
+    HORIZONTAL
+};
+
 class CARTRIDGE
 {
 private:
@@ -20,6 +26,7 @@ private:
     Memory CHRrom;
     std::shared_ptr<Mapper> p_mapper;
 public: 
+    MIRROR mirroring;
     CARTRIDGE(Config config) : config(config), PRGrom(0x8000), CHRrom(0x4000)
     {};
     bool read_file();
@@ -42,6 +49,8 @@ public:
     
     byte cpu_read(uint16_t addr);
     void cpu_write(uint16_t addr, byte data);
+    byte ppu_read(uint16_t addr);
+    void ppu_write(uint16_t addr, byte data);
 };
 
 
