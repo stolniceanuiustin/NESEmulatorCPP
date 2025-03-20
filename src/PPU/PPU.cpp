@@ -232,7 +232,7 @@ void PPU::write_from_cpu(byte addr, byte data)
             taddr.reg = (uint16_t)((data & 0b00111111) << 8) | (taddr.reg & 0x00FF);
             PPUADDR_latch = true;
         }
-        else (PPUADDR_latch = true)
+        else if(PPUADDR_latch == true)
         {
             taddr.reg = (taddr.reg & 0xFF00) | data;
             vaddr = taddr;
@@ -250,7 +250,7 @@ void PPU::execute()
     switch (pipeline_state)
     {
     case PRE_RENDER:
-        ppu_log .write( "PRERENDER";
+        ppu_log .write("PRERENDER");
         if (dots == 1)
         {
             // PPUSTATUS &= 0b00011111;

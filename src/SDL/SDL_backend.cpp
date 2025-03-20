@@ -2,6 +2,12 @@
 #include "../include/SDL_backend.h"
 #include "../include/emulator_config.h"
 #include <iostream>
+
+/*
+TODO:
+Store logs in a stack or queue type of shi. you know 
+
+*/
 int init_sdl(SDL& sdl)
 {
     
@@ -21,7 +27,28 @@ int init_sdl(SDL& sdl)
     if(!sdl.renderer)
     {
         std::cout << "COULD NOT MAKE RENDERER";
+        return 3;
     }
+
+    sdl.debugWindow = SDL_CreateWindow("Debug Panel", 256, 50, 256*3, 50*3, 0);
+    if(!sdl.debugWindow)
+    {
+        std::cout << "COULD NOT MAKE WINDOW";
+        return 3;
+    }
+    sdl.debugRenderer = SDL_CreateRenderer(sdl.debugWindow, -1, SDL_RENDERER_ACCELERATED);
+    if(!sdl.debugRenderer)
+    {
+        std::cout << "COULD NOT MAKE RENDERER";
+        return 3;
+    }
+
+    if(TTF_Init() == -1)
+    {
+        std::cout << "COULD NOT INITIALIZE TTF: " << TTF_GetError() << '\n';
+        return 3;
+    }
+
     return 0;
 }
 
@@ -62,7 +89,10 @@ bool handle_input(SDL& sdl)
 void destroy_sdl(SDL& sdl)
 {
     SDL_DestroyRenderer(sdl.renderer);
+    SDL_DestroyRenderer(sdl.debugRenderer);
     SDL_DestroyWindow(sdl.window);
+    SDL_DestroyWindow(sdl.debugWindow);
+    TTF_Quit();
     SDL_Quit();
 }
 
@@ -77,9 +107,32 @@ void SDL::render_frame()
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, frame, nullptr, &destRect);
     SDL_RenderPresent(renderer);
-    for(int i=0; i<256*240; i++)
-    {
-        std::cout << screen.pixels[i];
-    }
+    // for(int i=0; i<256*240; i++)
+    // {
+    //     std::cout << screen.pixels[i];
+    // }
     SDL_DestroyTexture(frame);
 } 
+
+void render_text(SDL& sdl, const std::string& text)
+{
+    static TTF_Font* font = TTF_OpenFont("/usr/share/fonts/truetype/Arial.ttf", 24);
+    if(!font)
+    {
+        std::cout <<"CANT LOAD FONT" << TTF_GetError() << '\n';
+        return;
+    }
+
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), white);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(sdl.debugRenderer, textSurface);
+
+    SDL_Rect textRect = {10, 10, textSurface->w, textSurface->h};
+    SDL_SetRenderDrawColor(sdl.debugRenderer, 0, 0, 0, 255);
+    SDL_RenderClear(sdl.debugRenderer);
+    SDL_RenderCopy(sdl.debugRenderer, textTexture, nullptr, &textRect);
+    SDL_RenderPresent(sdl.debugRenderer);
+
+    SDL_FreeSurface(textSurface);
+    SDL_DestroyTexture(textTexture);
+}

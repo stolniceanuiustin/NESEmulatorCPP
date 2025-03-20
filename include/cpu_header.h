@@ -4,9 +4,11 @@
 #include "memory.h"
 #include "emulator_config.h"
 #include "bus.h"
+#include "tracer.h"
 #define TEST
 
 class BUS;
+class TRACER;
 typedef uint8_t byte;
 
 struct Mem
@@ -45,9 +47,9 @@ public:
 	byte B; // break
 	byte O; // overflow //iN DOCUMENTATION IT'S V BUT O is more intuitive
 	byte N; // negative
-	
+	TRACER tracer;
 	BUS* bus;
-	CPU() 
+	CPU() : tracer(*this)
 	{
 	};
 
@@ -100,6 +102,7 @@ public:
 	uint16_t read_address_from_pc();
 	uint16_t read_address(byte offset);
 	int execute();
+	std::string execute_debug();
 	uint16_t read_abs_address(uint16_t offset);
 	void push(byte x);
 	void push_address(uint16_t address);

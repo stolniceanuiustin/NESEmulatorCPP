@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
             for (int i = 0; i <= 10000; i++)
             {
                 int old_cycles = cpu.get_cycles();
-                cpu.execute();
+                std::string debug_output_log = cpu.execute_debug();
                 int new_cycles = cpu.get_cycles();
                 int cycles_elapsed = new_cycles - old_cycles;
                 // CHECK HOW MANY CYCLES THEN CATCH UP THE PPU
@@ -67,6 +67,8 @@ int main(int argc, char *argv[])
                 {   sdl.render_frame();
                     screen.RENDER_ENABLED = false;
                 }
+                render_text(sdl, debug_output_log);
+                //cout << debug_output_log;
                 usleep(0.558659218 /*-time(cpu) - 3*time(ppu)*/);
             }
             goto ENDLOOP;

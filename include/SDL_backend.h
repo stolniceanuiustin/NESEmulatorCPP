@@ -2,6 +2,8 @@
 #define SDL_HEADERGUARD
 #include "SDL.h"
 #include "virtual_screen.h"
+#include <SDL_ttf.h>
+#include <string>
 typedef enum
 {
     QUIT,
@@ -14,6 +16,8 @@ public:
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Surface *surface;
+    SDL_Renderer* debugRenderer;
+    SDL_Window* debugWindow;
     STATE state;
     Screen &screen;
 
@@ -23,4 +27,5 @@ public:
 int init_sdl(SDL &sdl);
 bool handle_input(SDL &sdl);
 void destroy_sdl(SDL &sdl);
+void render_text(SDL& sdl, const std::string& text);
 #endif

@@ -30,13 +30,13 @@ public:
     {
         for (int i = 0; i < 256 * 240; i++)
         {
-            pixels[i] = 0xFF00FFFF; // Test color;
+            pixels[i] = 0x0000FFFF; // Test color;
         }
-        RENDER_ENABLED = false;
+        RENDER_ENABLED = true;
     }
     void set_pixel(uint16_t scanline, uint16_t dot)
     {
-        pixels[256 * scanline + dot] = 0xFFFF00FF;
+        pixels[256 * scanline + dot] = 0x00FF00FF;
     }
 };
 

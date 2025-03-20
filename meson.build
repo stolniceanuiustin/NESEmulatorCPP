@@ -1,14 +1,20 @@
 project('6502Emu', 'cpp')
 
 sdl2_dep = dependency('sdl2')
+sdl2_ttf = dependency('sdl2_ttf', required: false)
+
+if not sdl2_ttf.found()
+    sdl2_ttf = declare_dependency(
+        include_directories: include_directories('/usr/include/SDL2'),
+        link_args: ['-lSDL2_ttf']
+    )
+endif
 
 src_files = [
     'src/main_debug.cpp',
     'src/CPU/address_logic.cpp',
     'src/CPU/cpu_core.cpp',
-    'src/CPU/instructions_addressed.cpp',
-    'src/CPU/instructions_intrerrupts.cpp',
-    'src/CPU/instructions_single_byte.cpp',
+    'src/CPU/instructions.cpp',
     'src/CPU/tracer.cpp',
     'src/PPU/PPU.cpp',
     'src/Mappers/mapper0.cpp',
@@ -19,4 +25,4 @@ src_files = [
 ]
 
 
-executable('emulator', src_files, dependencies: sdl2_dep)
+executable('emulator', src_files, dependencies: [sdl2_dep, sdl2_ttf])
