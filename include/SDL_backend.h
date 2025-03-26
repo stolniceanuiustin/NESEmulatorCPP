@@ -18,9 +18,9 @@ public:
     SDL_Surface *surface;
     SDL_Renderer* debugRenderer;
     SDL_Window* debugWindow;
-    STATE state;
+    static STATE state;
     Screen &screen;
-
+    bool tick;
     SDL(Screen &screen) : screen(screen) {};
     void render_frame();
 };

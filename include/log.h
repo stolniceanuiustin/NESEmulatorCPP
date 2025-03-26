@@ -7,12 +7,13 @@
 class LOG
 {
 public:
-    LOG(std::string log_type);
+    LOG(std::string log_type, bool log_enable);
     ~LOG(); 
 
     void write(const std::string &message); 
 private:
     std::ofstream log; 
+    bool enable;
 };
 
 #endif

@@ -3,6 +3,21 @@
 #include "../include/cpu_header.h"
 #include <iostream>
 #include <fstream>
+void PPU::hexdump()
+{
+    FILE *file = fopen("ppunametable", "wb");
+    if (file)
+    {
+        fwrite(nametable, sizeof(byte), 0x3FFF, file);
+        fclose(file);
+    }
+    FILE *pallete = fopen("ppupallete", "wb");
+    if(pallete)
+    {
+        fwrite(pallete_table, sizeof(byte), 0x32, pallete);
+        fclose(pallete);
+    }
+}
 void clear_status_register(byte &x)
 {
     x &= 0b00011111;
@@ -19,6 +34,12 @@ void PPU::reset()
     first_write = false;
     vaddr.reg = 0x0000;
     taddr.reg = 0x0000;
+    bgs_pattern_l = 0x0000;
+    bgs_pattern_h = 0x0000;
+    bgs_attribute_l = 0x0000;
+    bgs_attribute_h = 0x0000;
+    for(int i=0; i<32; i++)
+        pallete_table[i] = 0;
 }
 byte PPU::get_status()
 {
@@ -37,7 +58,6 @@ This function sohul dbe complete. PPU_Write remains! Then i need to see how to a
 */
 byte PPU::ppu_read(uint16_t addr, bool read_only)
 {
-    byte data = 0x00;
     addr &= 0x3FFF;
     if (addr >= 0x0000 && addr <= 0x1FFF)
     {
@@ -68,23 +88,23 @@ byte PPU::ppu_read(uint16_t addr, bool read_only)
                 return nametable[0][addr & 0x03FF];
             else if (addr >= 0x0800 && addr <= 0x0BFF)
                 return nametable[1][addr & 0x03FF];
-            else if(addr >= 0x0C00 && addr <= 0x0FFF)
+            else if (addr >= 0x0C00 && addr <= 0x0FFF)
                 return nametable[1][addr & 0x03FF];
         }
     }
-    else if(addr >= 0x3F00 && addr <= 0x3FFF)
+    else if (addr >= 0x3F00 && addr <= 0x3FFF)
     {
         addr &= 0x001F;
-        //mirroring: 
-        if(addr == 0x10) 
+        // mirroring:
+        if (addr == 0x10)
             addr = 0x00;
-        else if(addr == 0x14)
+        else if (addr == 0x14)
             addr = 0x04;
-        else if(addr == 0x18)
+        else if (addr == 0x18)
             addr = 0x08;
-        else if(addr == 0x1C)
+        else if (addr == 0x1C)
             addr = 0x0C;
-        return pallete_table[addr];
+        return pallete_table[addr] & (mask.grayscale ? 0x30 : 0x3F);
     }
 }
 
@@ -101,6 +121,7 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
         /*
             https://www.nesdev.org/wiki/Mirroring
         */
+        // std::cout << "Writing to nametable memory\n";
         addr &= 0x0FFF;
         if (cartridge->mirroring == VERTICAL)
         {
@@ -121,21 +142,22 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
                 nametable[0][addr & 0x03FF] = data;
             else if (addr >= 0x0800 && addr <= 0x0BFF)
                 nametable[1][addr & 0x03FF] = data;
-            else if(addr >= 0x0C00 && addr <= 0x0FFF)
+            else if (addr >= 0x0C00 && addr <= 0x0FFF)
                 nametable[1][addr & 0x03FF] = data;
         }
     }
-    else if(addr >= 0x3F00 && addr <= 0x3FFF)
+    else if (addr >= 0x3F00 && addr <= 0x3FFF)
     {
+        std::cout << "writing to pallete table\n";
         addr &= 0x001F;
-        //mirroring: 
-        if(addr == 0x10) 
+        // mirroring:
+        if (addr == 0x10)
             addr = 0x00;
-        else if(addr == 0x14)
+        else if (addr == 0x14)
             addr = 0x04;
-        else if(addr == 0x18)
+        else if (addr == 0x18)
             addr = 0x08;
-        else if(addr == 0x1C)
+        else if (addr == 0x1C)
             addr = 0x0C;
         pallete_table[addr] = data;
     }
@@ -143,7 +165,7 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
 
 byte PPU::read_from_cpu(byte addr, bool read_only)
 {
-    byte data;
+    byte data = 0x00;
     if (read_only == true)
     {
         switch (addr)
@@ -179,8 +201,11 @@ byte PPU::read_from_cpu(byte addr, bool read_only)
         case 1:
             break; // mask not readable usually
         case 2:
-            status.reg & 0b11100000 | PPU_BUFFER & 0b00011111; // last 5 bits of the last ppu bus transaction
-            status.vertical_blank = 0;
+            // TODO: CHECK THIS
+            status.reg = (status.reg & 0b11100000) | (PPU_BUFFER & 0b00011111); // last 5 bits of the last ppu bus transaction
+            data = status.reg;
+            // i think clearing vblank is messing up with timing!
+            clear_vblank();
             PPUADDR_latch = false;
         case 3:
             // oam addr;
@@ -196,10 +221,10 @@ byte PPU::read_from_cpu(byte addr, bool read_only)
             break;
         case 7: // reads from memory but it is delayed one cycle
             data = PPU_BUFFER;
-            PPU_BUFFER = ppu_read(vaddr.reg); 
+            PPU_BUFFER = ppu_read(vaddr.reg);
             if (vaddr.reg >= 0x3F00)
-                data = PPU_BUFFER; // separate memory on the ppu
-            vaddr.reg += (control.increment_mode ? 32 : 1); //either vertical or horizontal jumps in nametable
+                data = PPU_BUFFER;                          // separate memory on the ppu
+            vaddr.reg += (control.increment_mode ? 32 : 1); // either vertical or horizontal jumps in nametable
             break;
         }
     }
@@ -218,108 +243,214 @@ void PPU::write_from_cpu(byte addr, byte data)
     case 1:
         mask.reg = data;
         break;
-    case 2:     // STATUS - read only
+    case 2: // STATUS - read only
         break;
     case 3:
         return; // OAM ADDR
     case 4:
         return; // OAMDATA
     case 5:
-        return; // PPUSCROLL
+        if (PPUADDR_latch == false)
+        {
+            fine_x = data & 0x07;
+            taddr.coarse_x = data >> 3;
+            PPUADDR_latch = true;
+        }
+        else
+        {
+            taddr.fine_y = data & 0x07;
+            taddr.coarse_y = data >> 3;
+            PPUADDR_latch = false;
+        }
+        return;
     case 6:
-        if(PPUADDR_latch == false)
+        if (PPUADDR_latch == false)
         {
             taddr.reg = (uint16_t)((data & 0b00111111) << 8) | (taddr.reg & 0x00FF);
             PPUADDR_latch = true;
         }
-        else if(PPUADDR_latch == true)
+        else if (PPUADDR_latch == true)
         {
             taddr.reg = (taddr.reg & 0xFF00) | data;
             vaddr = taddr;
-            PPUADDR_latch = 0;
+            PPUADDR_latch = false;
         }
         return;
     case 7:
         ppu_write(vaddr.reg, data); // PPUDATA
-        vaddr.reg += (control.increment_mode ? 32:1);
+        vaddr.reg += (control.increment_mode ? 32 : 1);
     }
 }
 
 void PPU::execute()
 {
-    switch (pipeline_state)
+    auto clock_shifters = [&]()
     {
-    case PRE_RENDER:
-        ppu_log .write("PRERENDER");
-        if (dots == 1)
+        // Every clock while rendering is enabled the internal shift registers shift one bit to the left
+        if (mask.render_background)
         {
-            // PPUSTATUS &= 0b00011111;
+            bgs_pattern_l <<= 1;
+            bgs_pattern_h <<= 1;
+            bgs_attribute_h <<= 1;
+            bgs_attribute_l <<= 1;
         }
-        if (dots >= LAST_SCANLINE_DOT)
+    };
+
+    auto load_bg_shifters = [&]()
+    {
+        bgs_pattern_l = (bgs_pattern_l & 0xFF00) | bg_next_tile_lsb;
+        bgs_pattern_h = (bgs_pattern_h & 0xFF00) | bg_next_tile_msb;
+        bgs_attribute_l = (bgs_attribute_l & 0xFF00) | ((bg_next_tile_attrib & 0b01) ? 0xFF : 0x00); // The lsbit of the attribute is mirrored 8 times
+        bgs_attribute_h = (bgs_attribute_h & 0xFF00) | ((bg_next_tile_attrib & 0b10) ? 0xFF : 0x00);
+    };
+
+    auto transfer_address_x = [&]()
+    {
+        if (mask.render_background)
         {
-            pipeline_state = RENDER;
-            dots = 0;
-            scanline = 0;
+            vaddr.nametable_x = taddr.nametable_x;
+            vaddr.coarse_x = taddr.coarse_x;
         }
-        break;
-    case RENDER:
-        ppu_log.write("RENDER");
-        if (dots > 0 && dots <= VISIBLE_DOTS)
+    };
+
+    auto transfer_address_y = [&]()
+    {
+        if (mask.render_background)
         {
-            // do something someday
-            //TODO: check set_pixelfunction, check how the color is calculated!
-            if (scanline % 5 == 0 || scanline % 5 == 1 || scanline % 5 == 3)
+            vaddr.nametable_y = taddr.nametable_y;
+            vaddr.coarse_y = taddr.coarse_y;
+            vaddr.fine_y = taddr.fine_y;
+        }
+    };
+    if (scanline >= -1 && scanline < 240)
+    {
+        if (scanline == 0 && dots == 0)
+            dots = 1;
+
+        if (scanline == -1 && dots == 1)
+            clear_vblank();
+
+        if ((dots >= 2 && dots < 258) || (dots >= 321 && dots < 338))
+        {
+            clock_shifters();
+            switch ((dots - 1) % 8)
             {
-                screen.set_pixel(scanline, dots);
+            case 0:
+                // Nametable fetch. The ppu has to fetch the next tile id from the nametable. Using the tile id it will fetch the bits from the nametable
+                load_bg_shifters();
+                // only 12 bit addressing for the ppu memory
+                bg_next_tile_id = ppu_read(0x2000 | vaddr.reg & 0x0FFF, false);
+
+                break;
+            case 2:
+                // atribute table fetch
+                // https://www.nesdev.org/wiki/PPU_scrolling#Tile_and_attribute_fetching
+                bg_next_tile_attrib = ppu_read(0x23C0 | vaddr.reg & 0x0C00 | (vaddr.reg >> 4) & 0x38 | (vaddr.reg >> 2) & 0x07);
+                if (vaddr.coarse_y & 0x02)
+                    bg_next_tile_attrib >>= 4;
+                if (vaddr.coarse_x & 0x02)
+                    bg_next_tile_attrib >>= 2;
+                bg_next_tile_attrib &= 0x03;
+                // todo: figure what those bits actually mean
+                break;
+            case 4:
+                // BG lsbits : least significant bits. fetch lsb for background tile
+                bg_next_tile_lsb = ppu_read((control.pattern_background << 12) + (uint16_t)bg_next_tile_id << 4 + (vaddr.fine_y));
+                break;
+            case 6:
+                bg_next_tile_msb = ppu_read((control.pattern_background << 12) + (uint16_t)bg_next_tile_id << 4 + (vaddr.fine_y));
+                break;
+            case 7:
+                // increase scrollx
+                break;
+            }
+            // on last visible dot increment scroll y
+            if (dots == VISIBLE_DOTS)
+                ;
+            // increment vert(v), horz(z) == i think its scorlling
+            if (dots == VISIBLE_DOTS + 1)
+            {
+                // reset the x position for the next scanline
+                load_bg_shifters();
+                transfer_address_x();
+            }
+            if (dots == 338 || dots == 340)
+            {
+                // does an unused memory fetch
+                bg_next_tile_id = ppu_read(0x2000 | (vaddr.reg & 0x00FF));
             }
         }
 
-        if (dots >= LAST_SCANLINE_DOT)
+        if (dots == 256)
+            ;
+        // incrementscrolly
+        if (dots == 257)
         {
-            scanline++;
-            dots = 0;
+            load_bg_shifters();
+            transfer_address_x();
         }
-        if (scanline >= VISIBLE_SCANLINES)
+        if (dots == 338 || dots == 340)
         {
-            pipeline_state = POST_RENDER;
+            bg_next_tile_id = ppu_read((0x2000 | vaddr.reg & 0x0FFF), false);
         }
-        break;
-    case POST_RENDER:
-        ppu_log.write( "POSTRENDER");
-        if (dots >= LAST_SCANLINE_DOT)
+        if (scanline == -1 && dots >= 280 && dots < 305)
         {
-            scanline++;
-            dots = 0;
-            pipeline_state = VERTICAL_BLANK;
+            transfer_address_y();
         }
-        break;
-    case VERTICAL_BLANK:
-        ppu_log.write("VBLANK");
-        if (dots == 1 && scanline == VISIBLE_SCANLINES + 1)
+    }
+    if (scanline == VISIBLE_SCANLINES) // post render scanline, nothing happens here
+        ;
+    if (scanline > VISIBLE_SCANLINES && scanline < FRAME_END_SCANLINE)
+    {
+        if (scanline == VISIBLE_SCANLINES + 1 && dots == 1)
         {
             set_vblank();
             screen.RENDER_ENABLED = true;
             std::cout << "=====BLANKING PERIOD======\n";
-            ppu_log.write("GOT HERE BLANKING PERIOD!!");
+            SDL::state = PAUSED;
             if (control.enable_nmi == 1)
             {
                 cpu.enqueue_nmi();
             }
         }
-        if (dots >= LAST_SCANLINE_DOT)
+    }
+
+    byte bg_pixel = 0x00;
+    byte bg_pallete = 0x00;
+    if (mask.render_background)
+    {
+        // TODO: Check this, need to figure out scrolling, ignore for now
+        uint16_t bit_mux = 0x8000 >> fine_x;
+
+        byte p0_pixel = (bgs_pattern_l & bit_mux) > 0;
+        byte p1_pixel = (bgs_pattern_h & bit_mux) > 0;
+        bg_pixel = (p1_pixel << 1) | p0_pixel;
+
+        byte bg_pallete0 = (bgs_attribute_l & bit_mux) > 0;
+        byte bg_pallete1 = (bgs_attribute_h & bit_mux) > 0;
+        bg_pallete = (bg_pallete1 << 1) | bg_pallete0;
+    }
+    if (scanline >= 0 && scanline < 240 && dots >= 0 && dots <= 256)
+    {
+        byte color = 0;
+        if (bg_pixel != 0)
         {
-            scanline++;
-            dots = 0;
+            color = ppu_read(0x3F00 + (bg_pallete << 2) + bg_pixel, false) & 0x3F;
         }
-        if (scanline >= FRAME_END_SCANLINE)
+        else
+            color = ppu_read(0x3F00, false) & 0x3F;
+        screen.set_pixel(scanline, dots, color);
+    }
+    dots++;
+    if (dots > LAST_SCANLINE_DOT)
+    {
+        dots = 0;
+        scanline++;
+        if (scanline > FRAME_END_SCANLINE)
         {
-            pipeline_state = PRE_RENDER;
-            scanline = 0;
-            even_frame = !even_frame;
+            scanline = -1;
         }
     }
-    ppu_log.write("\n");
-    dots++;
 }
 
 void PPU::set_vblank()

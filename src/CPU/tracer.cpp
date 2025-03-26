@@ -468,7 +468,7 @@ std::string TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte
            << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 2);
     }
 
-    ss << " " << instruction_name << " ";
+    ss << " " << instruction_name << "    ";
 
     // CPU Registers
     ss << std::hex << std::uppercase
@@ -480,6 +480,7 @@ std::string TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte
        << "CYC:" << std::dec << (int)cycles;
 
     ss << '\n';
+    cout << ss.str();
     return ss.str();
     
     // if (!logs)

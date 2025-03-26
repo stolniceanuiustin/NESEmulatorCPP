@@ -5,6 +5,7 @@
 #include "virtual_screen.h"
 #include "cartridge.h"
 #include "log.h"
+#include "SDL_backend.h"
 class CARTRIDGE;
 class BUS;
 class Memory;
@@ -48,7 +49,7 @@ union
         uint8_t grayscale : 1;
         uint8_t render_background_left : 1;
         uint8_t render_sprites_left : 1;
-        uint8_t render_backgorund : 1;
+        uint8_t render_background : 1;
         uint8_t render_sprites : 1;
         uint8_t enhance_red : 1;
         uint8_t enhance_green : 1;
@@ -75,7 +76,8 @@ union
 } control;
 
 union loopy
-{
+{   
+    //THE X and T registers play more roles. Can either be used as address for vram or for selecting other stuff
     struct
     {
         uint16_t coarse_x : 5;
@@ -119,7 +121,8 @@ public:
     byte PPU_BUFFER;
     bool even_frame = false;
 
-    PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen), ppu_log("ppu_log.txt"){
+    //TODO: here you can enable/disable ppu logging
+    PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen), ppu_log("ppu_log.txt", false){
         current_frame = 0;
         status.reg = 0b10100000;
         control.reg = 0x00;
@@ -134,7 +137,7 @@ public:
         scanline = 0;
         dots = 0;
         pipeline_state = PRE_RENDER;
-        
+        fine_x = 0;
     }
     
     byte OAM[256];
@@ -145,6 +148,22 @@ public:
     byte nametable[2][0x03FF]; //mirrored
     byte patterntable[2][0x0FFF];
     byte pallete_table[32];
+    byte fine_x = 0;
+    //rendering shift registers! they shift every PPU clock. There are 2 16bit registers
+    //https://www.nesdev.org/wiki/PPU_rendering
+    //Conceptually:
+    //Pixels that are being drawn currently
+    //So we always load only the last 8 bits of the register
+    //msb xxxx-xxxx                            xxxx-xxxx 
+    //lsb xxxx-xxxx                            xxxx-xxxx
+    uint16_t bgs_pattern_l = 0x0000; 
+    uint16_t bgs_pattern_h = 0x0000;
+    uint16_t bgs_attribute_l = 0x0000;
+    uint16_t bgs_attribute_h = 0x0000;
+    byte bg_next_tile_id = 0x00;
+    byte bg_next_tile_attrib = 0x00;
+    byte bg_next_tile_lsb = 0x00;
+    byte bg_next_tile_msb = 0x00;
 
     void reset();
     void execute();
@@ -170,6 +189,7 @@ public:
     byte ppu_read(uint16_t addr, bool read_only = false);
     void ppu_write(uint16_t addr, byte data);
     LOG ppu_log;
+    void hexdump();
 private:
     enum State
     {

@@ -80,6 +80,10 @@ public:
 	{
 		return cycles;
 	}
+	void set_cycles(int new_cycles)
+	{
+		cycles = new_cycles;
+	}
 	uint16_t get_pc()
 	{
 		return PC;

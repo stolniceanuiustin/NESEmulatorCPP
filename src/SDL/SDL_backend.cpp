@@ -8,9 +8,10 @@ TODO:
 Store logs in a stack or queue type of shi. you know 
 
 */
+STATE SDL::state = PAUSED;
 int init_sdl(SDL& sdl)
 {
-    
+    sdl.tick = false;
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
@@ -23,7 +24,7 @@ int init_sdl(SDL& sdl)
         std::cout << "COULD NOT MAKE WINDOW";
         return 3;
     }
-    sdl.renderer = SDL_CreateRenderer(sdl.window, -1, SDL_RENDERER_ACCELERATED);
+    sdl.renderer = SDL_CreateRenderer(sdl.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if(!sdl.renderer)
     {
         std::cout << "COULD NOT MAKE RENDERER";
@@ -36,7 +37,7 @@ int init_sdl(SDL& sdl)
         std::cout << "COULD NOT MAKE WINDOW";
         return 3;
     }
-    sdl.debugRenderer = SDL_CreateRenderer(sdl.debugWindow, -1, SDL_RENDERER_ACCELERATED);
+    sdl.debugRenderer = SDL_CreateRenderer(sdl.debugWindow, -1, SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
     if(!sdl.debugRenderer)
     {
         std::cout << "COULD NOT MAKE RENDERER";
@@ -73,6 +74,16 @@ bool handle_input(SDL& sdl)
                     }
                     else sdl.state = RUNNING;
                     return true;
+
+                    case SDLK_s:
+                    if(sdl.state == PAUSED)
+                    {
+                        sdl.tick = true;
+                    }
+                    return true;
+                    case SDLK_BACKSPACE:
+                        sdl.state = QUIT;
+                    
                 }
             case SDL_KEYUP:
                 return false;

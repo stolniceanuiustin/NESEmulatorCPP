@@ -1,6 +1,6 @@
 #include "include/log.h"
 
-LOG::LOG(std::string log_type) : log(log_type) 
+LOG::LOG(std::string log_type, bool log_enable) : log(log_type), enable(log_enable)
 {
     if (!log)
     {
@@ -18,8 +18,10 @@ LOG::~LOG()
 
 void LOG::write(const std::string &message)
 {
-    if (log.is_open())
-    {
-        log << message << std::endl;
-    }
+    if(enable)
+        if (log.is_open())
+        {
+            log << message << std::endl;
+        }
+    else return;
 }
