@@ -566,8 +566,8 @@ void CPU::trigger_irq()
     {
         SP = 0xFF;
         push_address(PC);
-        // push((PC & 0xFF00) >> 8);
-        // push((PC & 0x00FF));
+        push((PC & 0xFF00) >> 8);
+        push((PC & 0x00FF));
         push(pack_flags());
         PC = read_abs_address(IRQ_vector);
         I = 1;
@@ -575,14 +575,13 @@ void CPU::trigger_irq()
 }
 
 void CPU::trigger_nmi()
-{
+{   //STACK STARTS AT 0xFD
     std::cout << "===============NMI TRIGGERED===============\n";
-    SP = 0xFF;
+    SP = 0xFD;
     push_address(PC);
     push(pack_flags());
     PC = read_abs_address(NMI_vector);
     I = 1;
-    
     pending_nmi = false;
 }
 

@@ -201,6 +201,8 @@ public:
 		pending_nmi = true;
 	}
 
+	void hexdump();
+
 
 };
 

@@ -12,7 +12,7 @@ void PPU::hexdump()
         fclose(file);
     }
     FILE *pallete = fopen("ppupallete", "wb");
-    if(pallete)
+    if (pallete)
     {
         fwrite(pallete_table, sizeof(byte), 0x32, pallete);
         fclose(pallete);
@@ -38,19 +38,8 @@ void PPU::reset()
     bgs_pattern_h = 0x0000;
     bgs_attribute_l = 0x0000;
     bgs_attribute_h = 0x0000;
-    for(int i=0; i<32; i++)
+    for (int i = 0; i < 32; i++)
         pallete_table[i] = 0;
-}
-byte PPU::get_status()
-{
-    byte state = status.reg & 0b11100000;
-    clear_vblank(); // VBLANK is cleared whenever PPUSTATUS IS READ;
-    first_write = true;
-    return state;
-}
-byte PPU::get_control()
-{
-    return control.reg;
 }
 
 /*
@@ -249,7 +238,7 @@ void PPU::write_from_cpu(byte addr, byte data)
         return; // OAM ADDR
     case 4:
         return; // OAMDATA
-    case 5:
+    case 5:     // Scroll Register
         if (PPUADDR_latch == false)
         {
             fine_x = data & 0x07;
@@ -313,6 +302,43 @@ void PPU::execute()
         }
     };
 
+    auto increment_scroll_x = [&]()
+    {
+        if (mask.render_background)
+        {
+            if (vaddr.coarse_x == 31)
+            {
+                vaddr.coarse_x = 0;
+                vaddr.nametable_x = !vaddr.nametable_x;
+            }
+            else
+                vaddr.coarse_x++;
+        }
+    };
+
+    auto increment_scroll_y = [&]()
+    {
+        if (mask.render_background)
+        {
+            if (vaddr.fine_y < 7)
+                vaddr.fine_y++;
+            else
+            {
+                vaddr.fine_y = 0;
+                if (vaddr.coarse_y == 29)
+                {
+                    vaddr.coarse_y = 0;
+                    vaddr.nametable_y = !vaddr.nametable_y;
+                }
+                else if (vaddr.coarse_y == 31)
+                {
+                    vaddr.coarse_y = 0;
+                }
+                else
+                    vaddr.coarse_y++;
+            }
+        }
+    };
     auto transfer_address_y = [&]()
     {
         if (mask.render_background)
@@ -345,7 +371,7 @@ void PPU::execute()
             case 2:
                 // atribute table fetch
                 // https://www.nesdev.org/wiki/PPU_scrolling#Tile_and_attribute_fetching
-                bg_next_tile_attrib = ppu_read(0x23C0 | vaddr.reg & 0x0C00 | (vaddr.reg >> 4) & 0x38 | (vaddr.reg >> 2) & 0x07);
+                bg_next_tile_attrib = ppu_read(0x23C0 | (vaddr.nametable_y << 11) | (vaddr.nametable_x << 10) | ((vaddr.coarse_y >> 2) << 3) | (vaddr.coarse_x >> 2));
                 if (vaddr.coarse_y & 0x02)
                     bg_next_tile_attrib >>= 4;
                 if (vaddr.coarse_x & 0x02)
@@ -355,43 +381,30 @@ void PPU::execute()
                 break;
             case 4:
                 // BG lsbits : least significant bits. fetch lsb for background tile
-                bg_next_tile_lsb = ppu_read((control.pattern_background << 12) + (uint16_t)bg_next_tile_id << 4 + (vaddr.fine_y));
+                bg_next_tile_lsb = ppu_read((control.pattern_background << 12) + ((uint16_t)bg_next_tile_id << 4) + (vaddr.fine_y) + 0);
                 break;
             case 6:
-                bg_next_tile_msb = ppu_read((control.pattern_background << 12) + (uint16_t)bg_next_tile_id << 4 + (vaddr.fine_y));
+                bg_next_tile_msb = ppu_read((control.pattern_background << 12) + ((uint16_t)bg_next_tile_id << 4) + (vaddr.fine_y) + 8);
                 break;
             case 7:
-                // increase scrollx
+                increment_scroll_x();
                 break;
             }
-            // on last visible dot increment scroll y
-            if (dots == VISIBLE_DOTS)
-                ;
-            // increment vert(v), horz(z) == i think its scorlling
-            if (dots == VISIBLE_DOTS + 1)
-            {
-                // reset the x position for the next scanline
-                load_bg_shifters();
-                transfer_address_x();
-            }
-            if (dots == 338 || dots == 340)
-            {
-                // does an unused memory fetch
-                bg_next_tile_id = ppu_read(0x2000 | (vaddr.reg & 0x00FF));
-            }
         }
-
-        if (dots == 256)
-            ;
-        // incrementscrolly
-        if (dots == 257)
+        // on last visible dot increment scroll y
+        if (dots == VISIBLE_DOTS)
+        {
+            increment_scroll_y();
+        }
+        if (dots == VISIBLE_DOTS + 1)
         {
             load_bg_shifters();
             transfer_address_x();
         }
         if (dots == 338 || dots == 340)
         {
-            bg_next_tile_id = ppu_read((0x2000 | vaddr.reg & 0x0FFF), false);
+            // does an unused memory fetch
+            bg_next_tile_id = ppu_read(0x2000 | (vaddr.reg & 0x00FF));
         }
         if (scanline == -1 && dots >= 280 && dots < 305)
         {
@@ -429,18 +442,19 @@ void PPU::execute()
         byte bg_pallete0 = (bgs_attribute_l & bit_mux) > 0;
         byte bg_pallete1 = (bgs_attribute_h & bit_mux) > 0;
         bg_pallete = (bg_pallete1 << 1) | bg_pallete0;
-    }
-    if (scanline >= 0 && scanline < 240 && dots >= 0 && dots <= 256)
-    {
-        byte color = 0;
-        if (bg_pixel != 0)
+        if (scanline >= 0 && scanline < 240 && dots >= 0 && dots <= 256)
         {
-            color = ppu_read(0x3F00 + (bg_pallete << 2) + bg_pixel, false) & 0x3F;
+            byte color = 0;
+            if (bg_pixel != 0)
+            {
+                color = ppu_read(0x3F00 + (bg_pallete << 2) + bg_pixel, false) & 0x3F;
+            }
+            else
+                color = ppu_read(0x3F00, false) & 0x3F;
+            screen.set_pixel(scanline, dots, color);
         }
-        else
-            color = ppu_read(0x3F00, false) & 0x3F;
-        screen.set_pixel(scanline, dots, color);
     }
+
     dots++;
     if (dots > LAST_SCANLINE_DOT)
     {

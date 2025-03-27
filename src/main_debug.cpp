@@ -26,8 +26,9 @@ int main(int argc, char *argv[])
     init_sdl(sdl);
     sdl.state = PAUSED;
 
-    Config config = Config("../roms/donkeykong.nes");
+    //Config config = Config("../roms/donkeykong.nes");
     //Config config = Config("../roms/nestest.nes");
+    Config config = Config("../roms/supermario.nes");
     CARTRIDGE cartridge(config);
     cartridge.read_file();
 
@@ -123,6 +124,7 @@ int main(int argc, char *argv[])
         {
             bus.hexdump();
             ppu.hexdump();
+            cpu.hexdump();
             goto ENDLOOP;
         }
     }

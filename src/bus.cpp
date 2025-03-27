@@ -52,6 +52,7 @@ byte BUS::cpu_read(uint16_t addr)
         std::cerr << "INPUT REGISTERS\n";
         return 0;
     }
+    else return 0;
 }
 
 void BUS::reset()
@@ -64,4 +65,5 @@ void BUS::hexdump()
 {
     cpu_ram.hexdump("cpu_hexdump", 0x07FF);
     ppu_ram.hexdump("ppu_hexdump", 0x3FFF);
+
 }

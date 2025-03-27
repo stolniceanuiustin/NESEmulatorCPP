@@ -27,6 +27,7 @@ bool CARTRIDGE::read_file()
     }
     
     byte mapper_type = (header.flags6 && 0xF0 >> 4) | (header.flags7 && 0xF0);
+    std::cout << "Mapper_type: " << (int)mapper_type << '\n';
     byte nametable_type = (header.flags6 & 1);
     if(nametable_type == 0)
     {

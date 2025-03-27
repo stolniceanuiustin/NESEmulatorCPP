@@ -67,6 +67,21 @@ uint16_t CPU::pop_address()
     return to_return;
 }
 
+void CPU::hexdump()
+{
+    FILE* cpu_fullhexdump = fopen("cpuhexdumpfull", "wb");
+    if(cpu_fullhexdump != nullptr)
+    {
+        for(int i=0; i<=0xFFFF; i++)
+        {
+            byte buff = read(i);
+            fwrite(&buff, 1, 1, cpu_fullhexdump);
+        }
+        fclose(cpu_fullhexdump);
+    }
+    return;
+}
+
 uint16_t CPU::read_address(byte offset)
 {
     uint16_t val = read(offset+1); // little endian
@@ -105,7 +120,7 @@ bool CPU::reset()
     B = 0;
     O = 0;
     N = 0;
-    //bus->reset();
+    bus->reset();
     cycles = 0;
     return true;
 }
@@ -569,4 +584,5 @@ std::string CPU::execute_debug()
         std::string debug_output = tracer.tracer(original_pc, original_flags, original_A, original_X, original_Y, original_SP, original_cycles);
         return debug_output;
     }
+    return "NMI TRIGGER\n";
 }

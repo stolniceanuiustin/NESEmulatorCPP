@@ -148,7 +148,7 @@ public:
     byte nametable[2][0x03FF]; //mirrored
     byte patterntable[2][0x0FFF];
     byte pallete_table[32];
-    byte fine_x = 0;
+    byte fine_x = 0; //3 bits wide!
     //rendering shift registers! they shift every PPU clock. There are 2 16bit registers
     //https://www.nesdev.org/wiki/PPU_rendering
     //Conceptually:
