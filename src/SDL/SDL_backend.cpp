@@ -5,11 +5,11 @@
 
 /*
 TODO:
-Store logs in a stack or queue type of shi. you know 
+Store logs in a stack or queue type of shi. you know
 
 */
 STATE SDL::state = PAUSED;
-int init_sdl(SDL& sdl)
+int init_sdl(SDL &sdl)
 {
     sdl.tick = false;
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -18,33 +18,33 @@ int init_sdl(SDL& sdl)
         return 3;
     }
 
-    sdl.window = SDL_CreateWindow("NESEMU", 256, 240, 256*3, 240*3, 0);
-    if(!sdl.window)
+    sdl.window = SDL_CreateWindow("NESEMU", 256, 240, 256 * 3, 240 * 3, 0);
+    if (!sdl.window)
     {
         std::cout << "COULD NOT MAKE WINDOW";
         return 3;
     }
     sdl.renderer = SDL_CreateRenderer(sdl.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if(!sdl.renderer)
+    if (!sdl.renderer)
     {
         std::cout << "COULD NOT MAKE RENDERER";
         return 3;
     }
 
-    sdl.debugWindow = SDL_CreateWindow("Debug Panel", 256, 50, 256*3, 50*3, 0);
-    if(!sdl.debugWindow)
+    sdl.debugWindow = SDL_CreateWindow("Debug Panel", 256, 50, 256 * 3, 50 * 3, 0);
+    if (!sdl.debugWindow)
     {
         std::cout << "COULD NOT MAKE WINDOW";
         return 3;
     }
-    sdl.debugRenderer = SDL_CreateRenderer(sdl.debugWindow, -1, SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
-    if(!sdl.debugRenderer)
+    sdl.debugRenderer = SDL_CreateRenderer(sdl.debugWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (!sdl.debugRenderer)
     {
         std::cout << "COULD NOT MAKE RENDERER";
         return 3;
     }
 
-    if(TTF_Init() == -1)
+    if (TTF_Init() == -1)
     {
         std::cout << "COULD NOT INITIALIZE TTF: " << TTF_GetError() << '\n';
         return 3;
@@ -53,42 +53,93 @@ int init_sdl(SDL& sdl)
     return 0;
 }
 
-bool handle_input(SDL& sdl)
+bool handle_input(SDL &sdl)
 {
     SDL_Event event;
-    while(SDL_PollEvent(&event))
+    //sdl.bus.controller[0] = 0x00;
+    while (SDL_PollEvent(&event))
     {
-        switch(event.type)
+        switch (event.type)
         {
-            case SDL_QUIT:
-                sdl.state = QUIT;        
-                return true;
-            case SDL_KEYDOWN:
-                switch(event.key.keysym.sym)
+        case SDL_QUIT:
+            sdl.state = QUIT;
+            return true;
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym)
+            {
+            case SDLK_ESCAPE:
+                if (sdl.state == RUNNING)
                 {
-                    case SDLK_ESCAPE:
-                    if(sdl.state == RUNNING)
-                    {
-                        sdl.state = PAUSED;
-                        std::cout << "==========PAUSED==========\n";
-                    }
-                    else sdl.state = RUNNING;
-                    return true;
-
-                    case SDLK_s:
-                    if(sdl.state == PAUSED)
-                    {
-                        sdl.tick = true;
-                    }
-                    return true;
-                    case SDLK_BACKSPACE:
-                        sdl.state = QUIT;
-                    
+                    sdl.state = PAUSED;
+                    std::cout << "==========PAUSED==========\n";
                 }
-            case SDL_KEYUP:
-                return false;
-            default: 
-                return false;
+                else
+                    sdl.state = RUNNING;
+                return true;
+            case SDLK_5:
+                if (sdl.state == PAUSED)
+                {
+                    sdl.tick = true;
+                }
+                return true;
+            case SDLK_RIGHT:
+                sdl.bus.controller[0] |= 0x01;
+                return true;
+            case SDLK_LEFT:
+                sdl.bus.controller[0] |= 0x02;
+                return true;
+            case SDLK_DOWN:
+                sdl.bus.controller[0] |= 0x04;
+                return true;
+            case SDLK_UP:
+                sdl.bus.controller[0] |= 0x08;
+                return true;
+            case SDLK_s:
+                sdl.bus.controller[0] |= 0x10;
+                return true;
+            case SDLK_a:
+                sdl.bus.controller[0] |= 0x20;
+                return true;
+            case SDLK_z:
+                sdl.bus.controller[0] |= 0x40;
+                return true;
+            case SDLK_x:
+                sdl.bus.controller[0] |= 0x80;
+                return true;
+            case SDLK_BACKSPACE:
+                sdl.state = QUIT;
+            }
+        case SDL_KEYUP:
+            switch (event.key.keysym.sym)
+            {
+            case SDLK_RIGHT:
+                sdl.bus.controller[0] &= ~0x01; // Clear right bit
+                break;
+            case SDLK_LEFT:
+                sdl.bus.controller[0] &= ~0x02; // Clear left bit
+                break;
+            case SDLK_DOWN:
+                sdl.bus.controller[0] &= ~0x04; // Clear down bit
+                break;
+            case SDLK_UP:
+                sdl.bus.controller[0] &= ~0x08; // Clear up bit
+                break;
+            case SDLK_s:
+                sdl.bus.controller[0] &= ~0x10; // Clear 's' bit
+                break;
+            case SDLK_a:
+                sdl.bus.controller[0] &= ~0x20; // Clear 'a' bit
+                break;
+            case SDLK_z:
+                sdl.bus.controller[0] &= ~0x40; // Clear 'z' bit
+                break;
+            case SDLK_x:
+                sdl.bus.controller[0] &= ~0x80; // Clear 'x' bit
+                break;
+            default:
+                break;
+            }
+            return true;
         }
     }
     // SDL_SetRenderDrawColor(sdl.renderer, 0x00, 0x00, 0x00, 0x00);
@@ -97,7 +148,7 @@ bool handle_input(SDL& sdl)
     return true;
 }
 
-void destroy_sdl(SDL& sdl)
+void destroy_sdl(SDL &sdl)
 {
     SDL_DestroyRenderer(sdl.renderer);
     SDL_DestroyRenderer(sdl.debugRenderer);
@@ -109,12 +160,12 @@ void destroy_sdl(SDL& sdl)
 
 void SDL::render_frame()
 {
-    SDL_Texture* frame = SDL_CreateTexture(renderer, 
-                                        SDL_PIXELFORMAT_RGBA8888, 
-                                        SDL_TEXTUREACCESS_STREAMING, 
-                                        256, 240);  
-    SDL_UpdateTexture(frame, nullptr, screen.pixels, 256*sizeof(uint32_t));
-    SDL_Rect destRect = {0, 0, 256*3, 256*3};
+    SDL_Texture *frame = SDL_CreateTexture(renderer,
+                                           SDL_PIXELFORMAT_RGBA8888,
+                                           SDL_TEXTUREACCESS_STREAMING,
+                                           256, 240);
+    SDL_UpdateTexture(frame, nullptr, screen.pixels, 256 * sizeof(uint32_t));
+    SDL_Rect destRect = {0, 0, 256 * 3, 256 * 3};
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, frame, nullptr, &destRect);
     SDL_RenderPresent(renderer);
@@ -123,20 +174,20 @@ void SDL::render_frame()
     //     std::cout << screen.pixels[i];
     // }
     SDL_DestroyTexture(frame);
-} 
+}
 
-void render_text(SDL& sdl, const std::string& text)
+void render_text(SDL &sdl, const std::string &text)
 {
-    static TTF_Font* font = TTF_OpenFont("/usr/share/fonts/truetype/Arial.ttf", 24);
-    if(!font)
+    static TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/Arial.ttf", 24);
+    if (!font)
     {
-        std::cout <<"CANT LOAD FONT" << TTF_GetError() << '\n';
+        std::cout << "CANT LOAD FONT" << TTF_GetError() << '\n';
         return;
     }
 
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), white);
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(sdl.debugRenderer, textSurface);
+    SDL_Surface *textSurface = TTF_RenderText_Solid(font, text.c_str(), white);
+    SDL_Texture *textTexture = SDL_CreateTextureFromSurface(sdl.debugRenderer, textSurface);
 
     SDL_Rect textRect = {10, 10, textSurface->w, textSurface->h};
     SDL_SetRenderDrawColor(sdl.debugRenderer, 0, 0, 0, 255);

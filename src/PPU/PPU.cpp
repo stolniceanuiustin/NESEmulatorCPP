@@ -103,7 +103,7 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
     if (addr >= 0x0000 && addr <= 0x1FFF)
     {
         cartridge->ppu_write(addr, data);
-        ppu_log.write("Writing to cartridge ROM. should not get here in normal circumstances\n");
+        std::cout << "Writing to cartridge ROM. should not get here in normal circumstances\n";
     }
     else if (addr >= 0x2000 && addr <= 0x3EFF)
     {
@@ -137,7 +137,7 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
     }
     else if (addr >= 0x3F00 && addr <= 0x3FFF)
     {
-        std::cout << "writing to pallete table\n";
+        //std::cout << "writing to pallete table\n";
         addr &= 0x001F;
         // mirroring:
         if (addr == 0x10)
@@ -419,8 +419,8 @@ void PPU::execute()
         {
             set_vblank();
             screen.RENDER_ENABLED = true;
-            std::cout << "=====BLANKING PERIOD======\n";
-            SDL::state = PAUSED;
+            //std::cout << "=====BLANKING PERIOD======\n";
+            //SDL::state = PAUSED;
             if (control.enable_nmi == 1)
             {
                 cpu.enqueue_nmi();

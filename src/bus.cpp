@@ -19,11 +19,13 @@ void BUS::cpu_write(uint16_t addr, byte data)
     }
     else if(addr >= 0x4000 && addr <= 0x4015)
     {
-        std::cerr << "APU REGISTERS\n";
+        //std::cerr << "APU REGISTERS\n";
     }
     else if(addr == 0x4016 || addr == 0x4017)
     {
-        std::cerr << "INPUT REGISTERS\n";
+        controller_state[addr & 1] = controller[addr & 1];
+        //std::cout << (int)controller[addr & 1] << '\n';
+        //std::cerr << "INPUT REGISTERS write\n";
     }
 }
 
@@ -44,13 +46,16 @@ byte BUS::cpu_read(uint16_t addr)
     }
     else if(addr >= 0x4000 && addr <= 0x4015)
     {
-        std::cerr << "APU REGISTERS\n";
+        //std::cerr << "APU REGISTERS\n";
         return 0;
     }
     else if(addr == 0x4016 || addr == 0x4017)
     {
-        std::cerr << "INPUT REGISTERS\n";
-        return 0;
+        //TODO: read serial bit by bit to get the oinput !
+        byte data = (controller_state[addr & 1] & 0x80) > 0;
+        controller_state[addr & 1] <<=1;
+        //std::cerr << "INPUT REGISTERS READ\n";
+        return data;
     }
     else return 0;
 }
@@ -59,6 +64,8 @@ void BUS::reset()
 {
     cpu_ram.reset();
     ppu_ram.reset();
+    controller[0] = 0x00;
+    controller[1] = 0x00;
 }
 
 void BUS::hexdump()

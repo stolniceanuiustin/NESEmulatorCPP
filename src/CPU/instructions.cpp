@@ -576,7 +576,7 @@ void CPU::trigger_irq()
 
 void CPU::trigger_nmi()
 {   //STACK STARTS AT 0xFD
-    std::cout << "===============NMI TRIGGERED===============\n";
+    //std::cout << "===============NMI TRIGGERED===============\n";
     SP = 0xFD;
     push_address(PC);
     push(pack_flags());

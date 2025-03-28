@@ -3,6 +3,7 @@
 #include "SDL.h"
 #include "virtual_screen.h"
 #include <SDL_ttf.h>
+#include <../include/bus.h>
 #include <string>
 typedef enum
 {
@@ -18,10 +19,11 @@ public:
     SDL_Surface *surface;
     SDL_Renderer* debugRenderer;
     SDL_Window* debugWindow;
+    BUS& bus;
     static STATE state;
     Screen &screen;
     bool tick;
-    SDL(Screen &screen) : screen(screen) {};
+    SDL(Screen &screen, BUS& bus) : screen(screen), bus(bus) {};
     void render_frame();
 };
 int init_sdl(SDL &sdl);

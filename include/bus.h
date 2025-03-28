@@ -16,6 +16,8 @@ public:
     CARTRIDGE& cartridge;
     Memory cpu_ram;
     Memory ppu_ram;
+    byte controller[2];
+    byte controller_state[2];
     BUS(CPU &cpu, PPU &ppu, CARTRIDGE& cartridge) : cpu(cpu), ppu(ppu), cartridge(cartridge), cpu_ram(0x0800), ppu_ram(0x3FFF) {};
 
     void cpu_write(uint16_t addr, byte data);
