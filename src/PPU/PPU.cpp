@@ -173,6 +173,7 @@ byte PPU::read_from_cpu(byte addr, bool read_only)
             break;
         case 4:
             data = OAMDATA; // OAMDATA
+            break;
         case 5:
             return -1;
         case 6:
@@ -192,8 +193,12 @@ byte PPU::read_from_cpu(byte addr, bool read_only)
         case 2:
             // TODO: CHECK THIS
             status.reg = (status.reg & 0b11100000) | (PPU_BUFFER & 0b00011111); // last 5 bits of the last ppu bus transaction
-            data = status.reg;
             // i think clearing vblank is messing up with timing!
+            if(status.vertical_blank == 1)
+            {
+                status.sprite_zero_hit = 1;
+            }
+            data = status.reg;
             clear_vblank();
             PPUADDR_latch = false;
         case 3:
@@ -419,7 +424,7 @@ void PPU::execute()
         {
             set_vblank();
             screen.RENDER_ENABLED = true;
-            //std::cout << "=====BLANKING PERIOD======\n";
+            std::cout << "=====BLANKING PERIOD======\n";
             //SDL::state = PAUSED;
             if (control.enable_nmi == 1)
             {

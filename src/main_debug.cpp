@@ -16,17 +16,18 @@ const double CLK_TIME = 1.0/1789773.0;
 
 int main(int argc, char *argv[])
 {
-    // if(argc < 2)
-    // {
-    //     std::cerr << "Usage: " << argv[0] << "rom_name\n";
-    //     return -1;
-    // }
+    if(argc < 2)
+    {
+        std::cerr << "Usage: " << argv[0] << "rom_name\n";
+        return -1;
+    }
     Screen screen;
     
-
-    Config config = Config("../roms/donkeykong.nes");
+    Config config = Config(argv[1]);
+    //Config config = Config("../roms/donkeykong.nes");
     //Config config = Config("../roms/nestest.nes");
     //Config config = Config("../roms/supermario.nes");
+    //Config config = Config("../roms/allpads.nes");
     CARTRIDGE cartridge(config);
     cartridge.read_file();
 

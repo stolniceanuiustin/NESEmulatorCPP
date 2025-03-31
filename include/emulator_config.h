@@ -22,7 +22,7 @@ public:
     bool nametable_arrangement;
     bool has_battery_PRG_RAM;
 };
-
+#pragma pack(push, 1)
 struct NESHeader
 {
     char magic[4];
@@ -32,7 +32,7 @@ struct NESHeader
     byte flags7;
     byte unused[8];
 };
-
+#pragma pack(pop)
 
 void init_sdl();
 #endif

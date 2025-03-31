@@ -9,8 +9,8 @@
 class CARTRIDGE;
 
 bool mapper0(Config &config, CARTRIDGE &cartridge, std::ifstream &rom);
-class Mapper
-{
+bool mapper1(Config &config, CARTRIDGE &cartridge, std::ifstream &rom);
+class Mapper{
 public:
     uint8_t prg_banks;
     uint8_t chr_banks;
@@ -23,7 +23,7 @@ public:
     virtual uint16_t ppu_map_write(uint16_t addr) = 0;
 };
 
-//SOME MAPPERS MIGHT DIFFER FROM CPU READ AND WRITE
+// SOME MAPPERS MIGHT DIFFER FROM CPU READ AND WRITE
 class Mapper0 : public Mapper
 {
 public:
@@ -34,4 +34,13 @@ public:
     uint16_t ppu_map_write(uint16_t addr) override;
 };
 
+class Mapper1 : public Mapper
+{
+public:
+    Mapper1(uint8_t prg_banks, uint8_t chr_banks) : Mapper(prg_banks, chr_banks) {};
+    uint16_t cpu_map_read(uint16_t addr) override;
+    uint16_t cpu_map_write(uint16_t addr) override;
+    uint16_t ppu_map_read(uint16_t addr) override;
+    uint16_t ppu_map_write(uint16_t addr) override;
+};
 #endif

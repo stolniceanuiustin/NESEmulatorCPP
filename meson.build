@@ -18,6 +18,7 @@ src_files = [
     'src/CPU/tracer.cpp',
     'src/PPU/PPU.cpp',
     'src/Mappers/mapper0.cpp',
+    'src/Mappers/mapper1.cpp',
     'src/SDL/SDL_backend.cpp',
     'src/Cartridge.cpp',
     'src/bus.cpp',

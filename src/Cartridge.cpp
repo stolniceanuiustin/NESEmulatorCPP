@@ -25,30 +25,35 @@ bool CARTRIDGE::read_file()
         std::cerr << "Invalid NES file: Missing iNES header.\n";
         return false;
     }
-    
-    byte mapper_type = (header.flags6 && 0xF0 >> 4) | (header.flags7 && 0xF0);
+    std::cout << (int)header.flags6 << " " << (int)header.flags7 << '\n';
+    byte mapper_type = ((header.flags6 & 0b11110000) >> 4) | (header.flags7 & 0b11110000);
     std::cout << "Mapper_type: " << (int)mapper_type << '\n';
     byte nametable_type = (header.flags6 & 1);
-    if(nametable_type == 0)
+    if (nametable_type == 0)
     {
-        //Vertical mirroring
+        // Vertical mirroring
         std::cout << "Using vertical mirroring\n";
         mirroring = VERTICAL;
         set_mapping(0, 0x400, 0, 0x400);
     }
-    else if(nametable_type == 1)
+    else if (nametable_type == 1)
     {
         mirroring = HORIZONTAL;
         std::cout << "Using horizontal mirroring\n";
         set_mapping(0, 0, 0x400, 0x400);
     }
     config.nametable_arrangement = (nametable_type == 1) ? 1 : 0;
-    if(mapper_type == 0)
+    if (mapper_type == 0)
     {
-        //TODO CHECK THIS ASAP
         std::cout << "Using MAPPERTYPE = 0" << std::endl;
         p_mapper = std::make_shared<Mapper0>(header.prg_size, header.chr_size);
         mapper0(config, *this, rom);
+    }
+    else if (mapper_type == 1)
+    {
+        std::cout << "Using MAPPERTYPE = 1" << std::endl;
+        p_mapper = std::make_shared<Mapper1>(header.prg_size, header.chr_size);
+        mapper1(config, *this, rom);
     }
     return true;
 }
