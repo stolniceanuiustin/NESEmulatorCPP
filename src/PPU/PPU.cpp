@@ -125,13 +125,9 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
         }
         else if (cartridge->mirroring == HORIZONTAL)
         {
-            if (addr >= 0x0000 && addr <= 0x03FF)
+            if (addr >= 0x0000 && addr <= 0x07FF)
                 nametable[0][addr & 0x03FF] = data;
-            else if (addr >= 0x0400 && addr <= 0x07FF)
-                nametable[0][addr & 0x03FF] = data;
-            else if (addr >= 0x0800 && addr <= 0x0BFF)
-                nametable[1][addr & 0x03FF] = data;
-            else if (addr >= 0x0C00 && addr <= 0x0FFF)
+            else 
                 nametable[1][addr & 0x03FF] = data;
         }
     }
@@ -194,10 +190,6 @@ byte PPU::read_from_cpu(byte addr, bool read_only)
             // TODO: CHECK THIS
             status.reg = (status.reg & 0b11100000) | (PPU_BUFFER & 0b00011111); // last 5 bits of the last ppu bus transaction
             // i think clearing vblank is messing up with timing!
-            if(status.vertical_blank == 1)
-            {
-                status.sprite_zero_hit = 1;
-            }
             data = status.reg;
             clear_vblank();
             PPUADDR_latch = false;
@@ -263,7 +255,7 @@ void PPU::write_from_cpu(byte addr, byte data)
             taddr.reg = (uint16_t)((data & 0b00111111) << 8) | (taddr.reg & 0x00FF);
             PPUADDR_latch = true;
         }
-        else if (PPUADDR_latch == true)
+        else
         {
             taddr.reg = (taddr.reg & 0xFF00) | data;
             vaddr = taddr;
@@ -314,7 +306,7 @@ void PPU::execute()
             if (vaddr.coarse_x == 31)
             {
                 vaddr.coarse_x = 0;
-                vaddr.nametable_x = !vaddr.nametable_x;
+                vaddr.nametable_x = ~vaddr.nametable_x;
             }
             else
                 vaddr.coarse_x++;
@@ -333,7 +325,7 @@ void PPU::execute()
                 if (vaddr.coarse_y == 29)
                 {
                     vaddr.coarse_y = 0;
-                    vaddr.nametable_y = !vaddr.nametable_y;
+                    vaddr.nametable_y = ~vaddr.nametable_y;
                 }
                 else if (vaddr.coarse_y == 31)
                 {
@@ -409,7 +401,7 @@ void PPU::execute()
         if (dots == 338 || dots == 340)
         {
             // does an unused memory fetch
-            bg_next_tile_id = ppu_read(0x2000 | (vaddr.reg & 0x00FF));
+            bg_next_tile_id = ppu_read(0x2000 | (vaddr.reg & 0x0FFF));
         }
         if (scanline == -1 && dots >= 280 && dots < 305)
         {
@@ -447,7 +439,7 @@ void PPU::execute()
         byte bg_pallete0 = (bgs_attribute_l & bit_mux) > 0;
         byte bg_pallete1 = (bgs_attribute_h & bit_mux) > 0;
         bg_pallete = (bg_pallete1 << 1) | bg_pallete0;
-        if (scanline >= 0 && scanline < 240 && dots >= 0 && dots <= 256)
+        if (scanline >= 0 && scanline < 240 && dots > 0 && dots <= 256)
         {
             byte color = 0;
             if (bg_pixel != 0)
@@ -456,7 +448,7 @@ void PPU::execute()
             }
             else
                 color = ppu_read(0x3F00, false) & 0x3F;
-            screen.set_pixel(scanline, dots, color);
+            screen.set_pixel(scanline, dots-1, color);
         }
     }
 
