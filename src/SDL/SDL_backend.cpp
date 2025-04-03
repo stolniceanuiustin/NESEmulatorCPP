@@ -82,6 +82,12 @@ bool handle_input(SDL &sdl)
                     sdl.tick = true;
                 }
                 return true;
+            case SDLK_6:
+                if(sdl.state == PAUSED)
+                {
+                    sdl.render_one_frame = true;
+                }
+                return true;
             case SDLK_RIGHT:
                 sdl.bus.controller[0] |= 0x01;
                 return true;

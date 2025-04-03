@@ -11,68 +11,66 @@ class BUS;
 class Memory;
 class CPU;
 class LOG;
-// #define PPUCTRL shared_ram[0x2000]
-// #define PPUMASK shared_ram[0x2001]
-// #define PPUSTATUS shared_ram[0x2002]
-// #define OAMADDR shared_ram[0x2003]
-// #define OAMDATA shared_ram[0x2004]
-// #define PPUSCROLL shared_ram[0x2005]
-// #define PPUADDR shared_ram[0x2006]
-// #define PPUDATA shared_ram[0x2007]
-// #define OAMDMA shared_ram[0x4014]
+
 #define VISIBLE_SCANLINES 240
 #define VISIBLE_DOTS 256
 #define FRAME_END_SCANLINE 261
 #define DOTS_PER_SCANLINE 341
 #define LAST_SCANLINE_DOT 340
 
-#define SHOW_BG PPUMASK & 1 << 3
-#define VBLANK (PPUCTRL & 1 << 7) >> 7;
 typedef uint8_t byte;
+
+struct _OAM
+{
+    byte Y_pos;
+    byte index;
+    byte attributes;
+    byte X_pos;
+}; //this is how a sprite is stored
 
 union
 {
     struct 
     {
-        uint8_t unused : 5;
-        uint8_t sprite_overflow : 1;
-        uint8_t sprite_zero_hit : 1;
-        uint8_t vertical_blank : 1;
+        byte unused : 5;
+        byte sprite_overflow : 1;
+        byte sprite_zero_hit : 1;
+        byte vertical_blank : 1;
     };
-    uint8_t reg;
+    byte reg;
 }status;
 
 union
 {
     struct
     {
-        uint8_t grayscale : 1;
-        uint8_t render_background_left : 1;
-        uint8_t render_sprites_left : 1;
-        uint8_t render_background : 1;
-        uint8_t render_sprites : 1;
-        uint8_t enhance_red : 1;
-        uint8_t enhance_green : 1;
-        uint8_t enhance_blue : 1;
+        byte grayscale : 1;
+        byte render_background_left : 1;
+        byte render_sprites_left : 1;
+        byte render_background : 1;
+        byte render_sprites : 1;
+        byte enhance_red : 1;
+        byte enhance_green : 1;
+        byte enhance_blue : 1;
     };
 
-    uint8_t reg;
+    byte reg;
 } mask;
 
 union 
 {
     struct 
     {
-        uint8_t nametable_x : 1;
-        uint8_t nametable_y : 1;
-        uint8_t increment_mode : 1;
-        uint8_t pattern_sprite : 1;
-        uint8_t pattern_background : 1;
-        uint8_t sprite_size : 1;
-        uint8_t slave_mode : 1; //UNUSED
-        uint8_t enable_nmi : 1;
+        byte nametable_x : 1;
+        byte nametable_y : 1;
+        byte increment_mode : 1;
+        byte pattern_sprite : 1;
+        byte pattern_background : 1;
+        byte sprite_size : 1;
+        byte slave_mode : 1; //UNUSED
+        byte enable_nmi : 1;
     };
-    uint8_t reg;
+    byte reg;
 } control;
 
 union loopy
@@ -93,6 +91,7 @@ union loopy
 class PPU
 {
 public:
+    bool pause_after_frame = false;
     CPU &cpu;
     Screen &screen;
     CARTRIDGE* cartridge;
@@ -100,7 +99,7 @@ public:
     uint16_t current_frame;
     bool odd_frame;
     BUS* bus;
-    //uint8_t bus;
+    //byte bus;
     loopy vaddr; //in render = scrolling position, outside of rendering = the current VRAM address
     loopy taddr; //During rendering it does something. Outsdie of rendering, holds the VRAM address before transfering it to v
     uint16_t x; //FINE x position of the current scroll, sused during rendering alongside v
@@ -120,27 +119,31 @@ public:
     byte OAMDMA;
     byte PPU_BUFFER;
     bool even_frame = false;
-
+    _OAM OAM[64];
+    _OAM* pOAM = OAM; //pointer to OAM for byte by byte access
     //TODO: here you can enable/disable ppu logging
     PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen), ppu_log("ppu_log.txt", false){
         current_frame = 0;
         status.reg = 0b10100000;
         control.reg = 0x00;
         mask.reg = 0x00;
-        // OAMADDR = 0x00;
-        // PPUSCROLL = 0x00;
-        // PPUADDR = 0x00;
-        // PPUDATA = 0x00;
+        OAMADDR = 0x00;
+        OAMDATA = 0x00;
         odd_frame = false;
         bus = 0;
-        //v = 0;
+        // v = 0;
         scanline = 0;
         dots = 0;
-        pipeline_state = PRE_RENDER;
         fine_x = 0;
+        for(int i=0; i<64; i++)
+        {
+            OAM[i].Y_pos = 0x00;
+            OAM[i].X_pos = 0x00;
+            OAM[i].index = 0x00;
+            OAM[i].attributes = 0x00;
+        }
     }
     
-    byte OAM[256];
     byte OAMADDR;
     byte OAMDATA;
     byte PPUSCROLL;

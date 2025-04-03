@@ -23,6 +23,7 @@ public:
     static STATE state;
     Screen &screen;
     bool tick;
+    bool render_one_frame = false;
     SDL(Screen &screen, BUS& bus) : screen(screen), bus(bus) {};
     void render_frame();
 };

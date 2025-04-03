@@ -37,7 +37,7 @@ public:
 	byte Y;
 	uint16_t PC;
 	byte SP; // Stack pointer
-	int cycles;
+	uint64_t cycles;
 public:
 	// Cpu Flags
 	byte C; // carry
@@ -76,11 +76,11 @@ public:
 	{
 		return Y;
 	}
-	int get_cycles()
+	uint64_t get_cycles()
 	{
 		return cycles;
 	}
-	void set_cycles(int new_cycles)
+	void set_cycles(uint64_t new_cycles)
 	{
 		cycles = new_cycles;
 	}

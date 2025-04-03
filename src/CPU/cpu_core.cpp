@@ -579,8 +579,6 @@ std::string CPU::execute_debug()
                 break;
             }
 
-        // TODO: check if this is the correct way to call tracer
-        
         std::string debug_output = tracer.tracer(original_pc, original_flags, original_A, original_X, original_Y, original_SP, original_cycles);
         return debug_output;
     }

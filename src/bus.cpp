@@ -17,17 +17,24 @@ void BUS::cpu_write(uint16_t addr, byte data)
     {
         ppu.write_from_cpu(addr & 0x0007, data);
     }
-    else if (addr >= 0x4000 && addr <= 0x4015)
+    else if (addr >= 0x4000 && addr <= 0x4013)
     {
-        // std::cerr << "APU REGISTERS\n";
+        //std::cerr << "APU REGISTERS\n";
+    }
+    else if (addr == 0x4014) //OAMDMA
+    {
+        oam_dma_page = data;
+        oam_dma_addr = 0x00;
+        dma_transfer = true;
     }
     else if (addr == 0x4016 || addr == 0x4017)
     {
         static byte prev_write = 0;
-        if ((prev_write & 1) == 0 && (data & 1) == 1)
+        // std::cout << (int)prev_write << " " << (int)data << '\n';
+        if ((prev_write & 1) == 1 && (data & 1) == 0)
         {
             controller_state[0] = controller[0];
-            controller_state[1] = controller[1];
+            controller_state[1] = 0x00;
         }
         prev_write = data;
     }
@@ -57,8 +64,10 @@ byte BUS::cpu_read(uint16_t addr)
     {
         byte data = (controller_state[addr & 1] & 0x80) > 0 ? 1 : 0;
         controller_state[addr & 1] <<= 1;
+        if (data)
+            std::cout << (int)data << '\n';
         // std::cerr << "INPUT REGISTERS READ\n";
-        return data | 0x40; //bit 6 shjould always be set to 1 due to open bus behaviour
+        return data; // bit 6 shjould always be set to 1 due to open bus behaviour
     }
     else
         return 0;
@@ -72,6 +81,9 @@ void BUS::reset()
     controller[1] = 0x00;
     controller_state[0] = 0x00;
     controller_state[1] = 0x00;
+    dma_transfer = false;
+    oam_dma_page = 0x00;
+    oam_dma_addr = 0x00;
 }
 
 void BUS::hexdump()

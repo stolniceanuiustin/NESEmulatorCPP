@@ -32,6 +32,7 @@ void PPU::reset()
     PPUSCROLL_latch = false;
     PPUADDR_latch = false;
     first_write = false;
+    pause_after_frame = false;
     vaddr.reg = 0x0000;
     taddr.reg = 0x0000;
     bgs_pattern_l = 0x0000;
@@ -127,13 +128,13 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
         {
             if (addr >= 0x0000 && addr <= 0x07FF)
                 nametable[0][addr & 0x03FF] = data;
-            else 
+            else
                 nametable[1][addr & 0x03FF] = data;
         }
     }
     else if (addr >= 0x3F00 && addr <= 0x3FFF)
     {
-        //std::cout << "writing to pallete table\n";
+        // std::cout << "writing to pallete table\n";
         addr &= 0x001F;
         // mirroring:
         if (addr == 0x10)
@@ -194,10 +195,10 @@ byte PPU::read_from_cpu(byte addr, bool read_only)
             clear_vblank();
             PPUADDR_latch = false;
         case 3:
-            // oam addr;
+            // oam addr, write only
             break;
         case 4:
-            // oam data;
+            return reinterpret_cast<uint8_t *>(pOAM)[OAMADDR];
             break;
         case 5:
             // scroll is not readable
@@ -232,8 +233,11 @@ void PPU::write_from_cpu(byte addr, byte data)
     case 2: // STATUS - read only
         break;
     case 3:
-        return; // OAM ADDR
+        OAMADDR = data;
+        return;
     case 4:
+        reinterpret_cast<uint8_t *>(pOAM)[OAMADDR] = data;
+        OAMADDR = OAMADDR + 1;
         return; // OAMDATA
     case 5:     // Scroll Register
         if (PPUADDR_latch == false)
@@ -417,7 +421,8 @@ void PPU::execute()
             set_vblank();
             screen.RENDER_ENABLED = true;
             std::cout << "=====BLANKING PERIOD======\n";
-            //SDL::state = PAUSED;
+            if (pause_after_frame)
+                SDL::state = PAUSED;
             if (control.enable_nmi == 1)
             {
                 cpu.enqueue_nmi();
@@ -448,7 +453,7 @@ void PPU::execute()
             }
             else
                 color = ppu_read(0x3F00, false) & 0x3F;
-            screen.set_pixel(scanline, dots-1, color);
+            screen.set_pixel(scanline, dots - 1, color);
         }
     }
 

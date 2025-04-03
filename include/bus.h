@@ -18,8 +18,13 @@ public:
     Memory ppu_ram;
     byte controller[2];
     byte controller_state[2];
-    BUS(CPU &cpu, PPU &ppu, CARTRIDGE& cartridge) : cpu(cpu), ppu(ppu), cartridge(cartridge), cpu_ram(0x0800), ppu_ram(0x3FFF) {};
-
+    bool dma_transfer;
+    byte oam_dma_page;
+    byte oam_dma_addr;
+    BUS(CPU &cpu, PPU &ppu, CARTRIDGE& cartridge) : cpu(cpu), ppu(ppu), cartridge(cartridge), cpu_ram(0x0800), ppu_ram(0x3FFF) {
+        dma_transfer = false;
+    };
+    
     void cpu_write(uint16_t addr, byte data);
     void ppu_write(uint16_t addr, byte data);
     byte cpu_read(uint16_t addr);
