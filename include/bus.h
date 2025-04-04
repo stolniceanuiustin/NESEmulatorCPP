@@ -11,6 +11,9 @@ class CARTRIDGE;
 class BUS
 {
 public:
+    uint64_t new_cycles = 0;
+    uint64_t old_cycles = 0;
+    uint64_t cycles_elapsed = 0;
     CPU &cpu;
     PPU &ppu;
     CARTRIDGE& cartridge;
@@ -31,6 +34,7 @@ public:
     byte ppu_read(uint16_t addr);
     void reset();
     void hexdump();
+    void clock();
 };
 
 #endif

@@ -1,7 +1,14 @@
-#include "../include/bus.h"
-#include "../include/ppu.h"
-#include "../include/cartridge.h"
 #include <iostream>
+#include <unistd.h>
+#include "../include/emulator_config.h"
+#include "SDL.h"
+#include "../include/SDL_backend.h"
+#include "../include/cpu_header.h"
+#include "../include/unittest.h"
+#include "../include/ppu.h"
+#include "../include/mapper.h"
+#include "../include/bus.h"
+#include "../include/cartridge.h"
 
 void BUS::cpu_write(uint16_t addr, byte data)
 {
@@ -19,9 +26,9 @@ void BUS::cpu_write(uint16_t addr, byte data)
     }
     else if (addr >= 0x4000 && addr <= 0x4013)
     {
-        //std::cerr << "APU REGISTERS\n";
+        // std::cerr << "APU REGISTERS\n";
     }
-    else if (addr == 0x4014) //OAMDMA
+    else if (addr == 0x4014) // OAMDMA
     {
         oam_dma_page = data;
         oam_dma_addr = 0x00;
@@ -90,4 +97,18 @@ void BUS::hexdump()
 {
     cpu_ram.hexdump("cpu_hexdump", 0x07FF);
     ppu_ram.hexdump("ppu_hexdump", 0x3FFF);
+}
+
+void BUS::clock()
+{
+    old_cycles = cpu.get_cycles();
+    cpu.execute();
+    new_cycles = cpu.get_cycles();
+    cycles_elapsed = new_cycles - old_cycles;
+    for (int i = 0; i < cycles_elapsed; i++)
+    {
+        ppu.execute();
+        ppu.execute();
+        ppu.execute();
+    }
 }
