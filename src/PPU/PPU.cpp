@@ -17,6 +17,12 @@ void PPU::hexdump()
         fwrite(pallete_table, sizeof(byte), 0x32, pallete);
         fclose(pallete);
     }
+    FILE *oam_file = fopen("ppuoam", "wb");
+    if(oam_file)
+    {
+        fwrite(pOAM, sizeof(byte), 256, oam_file);
+        fclose(oam_file);
+    }
 }
 void clear_status_register(byte &x)
 {
@@ -198,7 +204,7 @@ byte PPU::read_from_cpu(byte addr, bool read_only)
             // oam addr, write only
             break;
         case 4:
-            return reinterpret_cast<uint8_t *>(pOAM)[OAMADDR];
+            return pOAM[OAMADDR];
             break;
         case 5:
             // scroll is not readable
@@ -236,7 +242,7 @@ void PPU::write_from_cpu(byte addr, byte data)
         OAMADDR = data;
         return;
     case 4:
-        reinterpret_cast<uint8_t *>(pOAM)[OAMADDR] = data;
+        pOAM[OAMADDR] = data;
         OAMADDR = OAMADDR + 1;
         return; // OAMDATA
     case 5:     // Scroll Register

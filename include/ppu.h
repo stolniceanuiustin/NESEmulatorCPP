@@ -120,7 +120,7 @@ public:
     byte PPU_BUFFER;
     bool even_frame = false;
     _OAM OAM[64];
-    _OAM* pOAM = OAM; //pointer to OAM for byte by byte access
+    byte* pOAM = (byte*)OAM; //pointer to OAM for byte by byte access
     //TODO: here you can enable/disable ppu logging
     PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen), ppu_log("ppu_log.txt", false){
         current_frame = 0;

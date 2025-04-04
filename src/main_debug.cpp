@@ -16,6 +16,7 @@ const double CLK_TIME = 1.0/1789773.0;
 
 int main(int argc, char *argv[])
 {
+    //TODO : move everything to bus, use this just for parsing!
     if(argc < 2)
     {
         std::cerr << "Usage: " << argv[0] << "rom_name\n";
@@ -57,16 +58,41 @@ int main(int argc, char *argv[])
             cpu.execute();
             int new_cycles = cpu.get_cycles();
             int cycles_elapsed = new_cycles - old_cycles;
-            //Prevent cycle overflow
-            if(new_cycles >= 100000)
-                cpu.set_cycles(0);
-            for (int i = 0; i < cycles_elapsed; i++)
-            {
-                ppu.execute();
-                ppu.execute();
-                ppu.execute();
-            }
 
+            if(bus.dma_transfer == true)
+            {
+                byte dma_data = 0x00;
+                
+                //halt cycle 
+                new_cycles += 1;
+                for(int i=0; i<3; i++)
+                    ppu.execute();
+                
+                //alignment cycle
+                if(new_cycles % 2 == 1)
+                {
+                    //dma can start on even cycle
+                    new_cycles++;
+                    for(int i=0; i<3; i++)
+                        ppu.execute();
+                }
+                for(int i = 0; i < 256; i++)
+                {
+                    dma_data = bus.cpu_read((bus.oam_dma_page << 8) | bus.oam_dma_addr);
+                    bus.oam_dma_addr++;
+                    ppu.pOAM[bus.oam_dma_addr] = dma_data;
+                    //execute ppu 6 times
+                    for(int ii=0; ii<6; ii++)
+                    {
+                        ppu.execute();
+                    }
+                }
+                //cout << "DMA TRANSFER\n";
+                bus.dma_transfer = false;
+            }
+            for (int i = 0; i < cycles_elapsed * 3; i++)
+                ppu.execute();
+            
             if (screen.RENDER_ENABLED == true)
             {
                 //cout << "=======RENDERING FRAME=======" << frames << '\n';

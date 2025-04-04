@@ -22,8 +22,8 @@ public:
     byte controller[2];
     byte controller_state[2];
     bool dma_transfer;
-    byte oam_dma_page;
-    byte oam_dma_addr;
+    byte oam_dma_page = 0x00;
+    byte oam_dma_addr = 0x00;
     BUS(CPU &cpu, PPU &ppu, CARTRIDGE& cartridge) : cpu(cpu), ppu(ppu), cartridge(cartridge), cpu_ram(0x0800), ppu_ram(0x3FFF) {
         dma_transfer = false;
     };
