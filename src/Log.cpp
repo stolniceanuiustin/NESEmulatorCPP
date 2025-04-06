@@ -18,10 +18,13 @@ LOG::~LOG()
 
 void LOG::write(const std::string &message)
 {
-    if(enable)
+    if (enable)
+    {
         if (log.is_open())
         {
             log << message << std::endl;
         }
-    else return;
+    }
+    else
+        return;
 }

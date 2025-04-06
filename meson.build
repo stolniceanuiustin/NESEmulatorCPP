@@ -1,8 +1,11 @@
-project('6502Emu', 'cpp')
+project('6502Emu', 'cpp', default_options: ['buildtype=debug'])
 
 sdl2_dep = dependency('sdl2')
 sdl2_ttf = dependency('sdl2_ttf', required: false)
 
+#add_project_arguments(['-fsanitize=address', '-fno-omit-frame-pointer'], language: 'cpp')
+#add_project_arguments('-fno-omit-frame-pointer', language: 'cpp')
+add_project_arguments('-Wall', '-Wpedantic', language: 'cpp')
 if not sdl2_ttf.found()
     sdl2_ttf = declare_dependency(
         include_directories: include_directories('/usr/include/SDL2'),

@@ -323,7 +323,10 @@ int CPU::execute()
 {
     // TODO ADD ELSE IFS!
     if (pending_nmi == true)
+    {
         trigger_nmi();
+        SDL::state = PAUSED;
+    }
     else
     {
         bool onaddress_group2 = false;
@@ -449,6 +452,7 @@ int CPU::execute()
 
         return 1;
     }
+    return 1;
 }
 
 std::string CPU::execute_debug()

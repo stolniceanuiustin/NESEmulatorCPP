@@ -78,5 +78,5 @@ byte CARTRIDGE::ppu_read(uint16_t addr)
 void CARTRIDGE::ppu_write(uint16_t addr, byte data)
 {
     uint16_t mapped_addr = p_mapper->ppu_map_write(addr);
-    CHRrom[mapped_addr] = addr;
+    CHRrom[mapped_addr] = data;
 }

@@ -22,15 +22,15 @@ typedef uint8_t byte;
 
 struct _OAM
 {
-    byte Y_pos;
-    byte index;
+    byte y;
+    byte id;
     byte attributes;
-    byte X_pos;
-}; //this is how a sprite is stored
+    byte x;
+}; // this is how a sprite is stored
 
 union
 {
-    struct 
+    struct
     {
         byte unused : 5;
         byte sprite_overflow : 1;
@@ -38,7 +38,7 @@ union
         byte vertical_blank : 1;
     };
     byte reg;
-}status;
+} status;
 
 union
 {
@@ -57,9 +57,9 @@ union
     byte reg;
 } mask;
 
-union 
+union
 {
-    struct 
+    struct
     {
         byte nametable_x : 1;
         byte nametable_y : 1;
@@ -67,15 +67,15 @@ union
         byte pattern_sprite : 1;
         byte pattern_background : 1;
         byte sprite_size : 1;
-        byte slave_mode : 1; //UNUSED
+        byte slave_mode : 1; // UNUSED
         byte enable_nmi : 1;
     };
     byte reg;
 } control;
 
 union loopy
-{   
-    //THE X and T registers play more roles. Can either be used as address for vram or for selecting other stuff
+{
+    // THE X and T registers play more roles. Can either be used as address for vram or for selecting other stuff
     struct
     {
         uint16_t coarse_x : 5;
@@ -94,19 +94,19 @@ public:
     bool pause_after_frame = false;
     CPU &cpu;
     Screen &screen;
-    CARTRIDGE* cartridge;
+    CARTRIDGE *cartridge;
 
     uint16_t current_frame;
     bool odd_frame;
-    BUS* bus;
-    //byte bus;
-    loopy vaddr; //in render = scrolling position, outside of rendering = the current VRAM address
-    loopy taddr; //During rendering it does something. Outsdie of rendering, holds the VRAM address before transfering it to v
-    uint16_t x; //FINE x position of the current scroll, sused during rendering alongside v
-    uint16_t w; //Togles on each write to PPUSCROLL or PPUADDR, indicating whether it's the first or secnon dwrite. Clears on reads of PPUSTATUS
-    //its also claled the write latch or write toggle
+    BUS *bus;
+    // byte bus;
+    loopy vaddr; // in render = scrolling position, outside of rendering = the current VRAM address
+    loopy taddr; // During rendering it does something. Outsdie of rendering, holds the VRAM address before transfering it to v
+    uint16_t x;  // FINE x position of the current scroll, sused during rendering alongside v
+    uint16_t w;  // Togles on each write to PPUSCROLL or PPUADDR, indicating whether it's the first or secnon dwrite. Clears on reads of PPUSTATUS
+    // its also claled the write latch or write toggle
 
-    uint16_t scanline;
+    int scanline;
     uint16_t dots;
 
     bool PPUSCROLL_latch = false;
@@ -120,9 +120,10 @@ public:
     byte PPU_BUFFER;
     bool even_frame = false;
     _OAM OAM[64];
-    byte* pOAM = (byte*)OAM; //pointer to OAM for byte by byte access
-    //TODO: here you can enable/disable ppu logging
-    PPU(CPU& cpu, Screen& screen) : cpu(cpu), screen(screen), ppu_log("ppu_log.txt", false){
+    byte *pOAM = (byte *)OAM; // pointer to OAM for byte by byte access
+    // TODO: here you can enable/disable ppu logging
+    PPU(CPU &cpu, Screen &screen) : cpu(cpu), screen(screen), ppu_log("ppu_log.txt", false)
+    {
         current_frame = 0;
         status.reg = 0b10100000;
         control.reg = 0x00;
@@ -135,31 +136,39 @@ public:
         scanline = 0;
         dots = 0;
         fine_x = 0;
-        for(int i=0; i<64; i++)
+        for (int i = 0; i < 64; i++)
         {
-            OAM[i].Y_pos = 0x00;
-            OAM[i].X_pos = 0x00;
-            OAM[i].index = 0x00;
+            OAM[i].y = 0x00;
+            OAM[i].x = 0x00;
+            OAM[i].id = 0x00;
             OAM[i].attributes = 0x00;
         }
+        for (int i = 0; i < 8; i++)
+        {
+            sprites_on_scanline[i] = {0, 0, 0, 0};
+            sprite_cnt = 0;
+            sp_pattern_h[i] = 0;
+            sp_pattern_l[i] = 0;
+        }
     }
-    
+
     byte OAMADDR;
     byte OAMDATA;
     byte PPUSCROLL;
 
-    byte nametable[2][0x03FF]; //mirrored
-    byte patterntable[2][0x0FFF];
+    byte nametable[2][0x0400]; // mirrored
+    byte patterntable[2][0x1000];
     byte pallete_table[32];
-    byte fine_x = 0; //3 bits wide!
-    //rendering shift registers! they shift every PPU clock. There are 2 16bit registers
-    //https://www.nesdev.org/wiki/PPU_rendering
-    //Conceptually:
-    //Pixels that are being drawn currently
-    //So we always load only the last 8 bits of the register
-    //msb xxxx-xxxx                            xxxx-xxxx 
-    //lsb xxxx-xxxx                            xxxx-xxxx
-    uint16_t bgs_pattern_l = 0x0000; 
+    byte fine_x = 0; // 3 bits wide!
+    // rendering shift registers! they shift every PPU clock. There are 2 16bit registers
+    // https://www.nesdev.org/wiki/PPU_rendering
+    // Conceptually:
+    // Pixels that are being drawn currently
+    // So we always load only the last 8 bits of the register
+    // msb xxxx-xxxx                            xxxx-xxxx
+    // lsb xxxx-xxxx                            xxxx-xxxx
+    // BACKGROUND RENDEERING
+    uint16_t bgs_pattern_l = 0x0000;
     uint16_t bgs_pattern_h = 0x0000;
     uint16_t bgs_attribute_l = 0x0000;
     uint16_t bgs_attribute_h = 0x0000;
@@ -168,6 +177,13 @@ public:
     byte bg_next_tile_lsb = 0x00;
     byte bg_next_tile_msb = 0x00;
 
+    // FOREGROUND RENDERING
+    _OAM sprites_on_scanline[8]; // only 8 sprites per scanline
+    byte sprite_cnt;
+    byte sp_pattern_l[8];
+    byte sp_pattern_h[8];
+    bool sprite_zero_on_scanline = false;
+    bool sprite_zero_is_rendering = false;
     void reset();
     void execute();
     void set_vblank_nmi();
@@ -176,23 +192,24 @@ public:
     void clear_vblank();
     byte get_status();
     byte get_control();
-    //For main bus
-    void connect_bus(BUS* new_bus)
+    // For main bus
+    void connect_bus(BUS *new_bus)
     {
         bus = new_bus;
     }
 
-    void connect_cartridge(CARTRIDGE* new_cartridge)
+    void connect_cartridge(CARTRIDGE *new_cartridge)
     {
         cartridge = new_cartridge;
     }
     byte read_from_cpu(byte addr, bool read_only);
     void write_from_cpu(byte addr, byte data);
-    //for internal ppu bus
+    // for internal ppu bus
     byte ppu_read(uint16_t addr, bool read_only = false);
     void ppu_write(uint16_t addr, byte data);
     LOG ppu_log;
     void hexdump();
+
 private:
     enum State
     {
@@ -202,9 +219,6 @@ private:
         VERTICAL_BLANK
     } pipeline_state;
     int cycle;
-    
 };
-
-
 
 #endif
