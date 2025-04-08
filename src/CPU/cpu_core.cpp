@@ -325,17 +325,17 @@ int CPU::execute()
     if (pending_nmi == true)
     {
         trigger_nmi();
-        SDL::state = PAUSED;
+       //SDL::state = PAUSED;
     }
     else
     {
         bool onaddress_group2 = false;
-        uint16_t original_pc = PC;
+        /*uint16_t original_pc = PC;
         byte original_flags = pack_flags();
         byte original_A = A;
         byte original_Y = Y;
         byte original_X = X;
-        byte original_SP = SP;
+        byte original_SP = SP;*/
         bool page_cross = false;
         int original_cycles = cycles;
 

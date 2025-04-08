@@ -71,7 +71,7 @@ bool handle_input(SDL &sdl)
                 if (sdl.state == RUNNING)
                 {
                     sdl.state = PAUSED;
-                    std::cout << "==========PAUSED==========\n";
+                    std::cout << "==========PAUSED==========" << std::endl;
                 }
                 else
                     sdl.state = RUNNING;
