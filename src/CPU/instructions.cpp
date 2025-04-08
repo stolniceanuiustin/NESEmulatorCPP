@@ -582,6 +582,8 @@ void CPU::trigger_nmi()
     push(pack_flags());
     PC = read_abs_address(NMI_vector);
     I = 1;
+    //TODO check if this was an issue
+    cycles += 7;
     pending_nmi = false;
 }
 

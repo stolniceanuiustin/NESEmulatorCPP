@@ -12,20 +12,22 @@
 
 using std::cout;
 
-const double CLK_TIME = 1.0/1789773.0;
+const double CLK_TIME = 1.0 / 1789773.0;
 
 int main(int argc, char *argv[])
 {
-    if(argc < 2)
+    // TODO : move everything to bus, use this just for parsing!
+    if (argc < 2)
     {
         std::cerr << "Usage: " << argv[0] << "rom_name\n";
         return -1;
     }
     Screen screen;
-    
+
     Config config = Config(argv[1]);
     CARTRIDGE cartridge(config);
-    cartridge.read_file();
+    if (!cartridge.read_file())
+        exit(-1);
 
     std::cout << "READ FILE SUCCESFULLY\n";
     CPU cpu;
@@ -36,64 +38,88 @@ int main(int argc, char *argv[])
     ppu.connect_cartridge(&cartridge);
     cpu.reset();
     cpu.init();
-    
+
     SDL sdl(screen, bus);
     init_sdl(sdl);
     sdl.state = PAUSED;
 
     config.code_segment = cpu.read_abs_address(0xFFFC);
-    //cpu.PC = 0xC000;
-    //TODO run for one frmae then sleep
+    // cpu.PC = 0xC000;
+    // TODO run for one frmae then sleep
+    // TODO check with sanitiser
     int frames = 0;
     while (1)
     {
         handle_input(sdl);
         if (sdl.state == RUNNING)
         {
-            
             uint32_t start_time = SDL_GetTicks();
             uint32_t end_time = 0;
             int old_cycles = cpu.get_cycles();
             cpu.execute();
             int new_cycles = cpu.get_cycles();
             int cycles_elapsed = new_cycles - old_cycles;
-            //Prevent cycle overflow
-            if(new_cycles >= 100000)
-                cpu.set_cycles(0);
-            for (int i = 0; i < cycles_elapsed; i++)
+            for (int i = 0; i < cycles_elapsed * 3; i++)
+                ppu.execute();
+            if (bus.dma_transfer == true)
             {
-                ppu.execute();
-                ppu.execute();
-                ppu.execute();
+                byte dma_data = 0x00;
+
+                // halt cycle
+                new_cycles += 1;
+                for (int i = 0; i < 3; i++)
+                    ppu.execute();
+
+                // alignment cycle
+                if (new_cycles % 2 == 1)
+                {
+                    // dma can start on even cycle
+                    new_cycles++;
+                    for (int i = 0; i < 3; i++)
+                        ppu.execute();
+                }
+                for (int i = 0; i < 256; i++)
+                {
+                    dma_data = bus.cpu_read((bus.oam_dma_page << 8) | bus.oam_dma_addr);
+                    bus.oam_dma_addr++;
+                    ppu.pOAM[bus.oam_dma_addr] = dma_data;
+                    // execute ppu 6 times
+                    for (int ii = 0; ii < 6; ii++)
+                    {
+                        ppu.execute();
+                    }
+                }
+                cpu.set_cycles(new_cycles);
+                // cout << "DMA TRANSFER\n";
+                bus.dma_transfer = false;
             }
 
             if (screen.RENDER_ENABLED == true)
             {
-                //cout << "=======RENDERING FRAME=======" << frames << '\n';
+                // cout << "=======RENDERING FRAME=======" << frames << '\n';
                 sdl.render_frame();
                 frames++;
                 uint32_t end_time = SDL_GetTicks();
                 screen.RENDER_ENABLED = false;
-                double time_elapsed = (end_time - start_time)*1000;
-                if(time_elapsed < 33333)
+                double time_elapsed = (end_time - start_time) * 1000;
+                if (time_elapsed < 33333)
                 {
                     timespec requested_time;
                     timespec remaining_time;
                     requested_time.tv_nsec = 33333 - time_elapsed;
-                    //nanosleep(&requested_time, &remaining_time);
-                    //cout << end_time << " " << start_time << std::endl;
+                    // nanosleep(&requested_time, &remaining_time);
+                    // cout << end_time << " " << start_time << std::endl;
                 }
             }
-            if(frames == 30)
+            if (frames == 30)
             {
-                std::cout <<"ONE SECOND PASSED" << std::endl;
+                std::cout << "ONE SECOND PASSED" << std::endl;
                 frames = 0;
             }
-            
         }
         else if (sdl.state == PAUSED)
         {
-            if(sdl.tick == true)
+            if (sdl.tick == true)
             {
                 int old_cycles = cpu.get_cycles();
                 std::string debug_output_log = cpu.execute_debug();
@@ -106,7 +132,7 @@ int main(int argc, char *argv[])
                     ppu.execute();
                     ppu.execute();
                 }
-    
+
                 // render_frmae
                 if (screen.RENDER_ENABLED == true)
                 {
@@ -118,7 +144,7 @@ int main(int argc, char *argv[])
             }
             continue;
         }
-        else if(sdl.state == QUIT)
+        else if (sdl.state == QUIT)
         {
             bus.hexdump();
             ppu.hexdump();

@@ -115,6 +115,7 @@ string compute_instruction_name_group1(byte aaa)
         return "SBC";
         break;
     }
+    return "UNKNOWN INSTRUCTION";
 }
 
 byte compute_operand_length_g23(byte bbb, byte opcode)

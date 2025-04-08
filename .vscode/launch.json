@@ -1,7 +1,29 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": []
-}
+    "configurations": [
+      {
+        "name": "Debug",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/debugdir_nosanitize/emulator",  
+        "args": ["roms/smb.nes"],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,  
+        "MIMode": "gdb",           
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ],
+        "miDebuggerPath": "/usr/bin/gdb",         
+        "miDebuggerArgs": "",
+        "sourceFileMap": {
+          "/path/to/source/code": "${workspaceFolder}/src"
+        },
+        "internalConsoleOptions": "openOnSessionStart"
+      }
+    ]
+  }
