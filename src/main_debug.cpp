@@ -55,26 +55,28 @@ int main(int argc, char *argv[])
         {
             uint32_t start_time = SDL_GetTicks();
             uint32_t end_time = 0;
-            int old_cycles = cpu.get_cycles();
             cpu.execute();
-            int new_cycles = cpu.get_cycles();
-            int cycles_elapsed = new_cycles - old_cycles;
-            for (int i = 0; i < cycles_elapsed * 3; i++)
+            for (int i = 0; i < 3; i++)
                 ppu.execute();
             if (bus.dma_transfer == true)
             {
+                while(cpu.actual_cycles < cpu.get_cycles())
+                {
+                    cpu.actual_cycles++;
+                    for(int i=0; i<3; i++)
+                        ppu.execute();
+                }
+                //HALT CYCLE
                 byte dma_data = 0x00;
-
-                // halt cycle
-                new_cycles += 1;
+                cpu.actual_cycles++;
                 for (int i = 0; i < 3; i++)
                     ppu.execute();
 
                 // alignment cycle
-                if (new_cycles % 2 == 1)
+                if (cpu.actual_cycles % 2 == 1)
                 {
                     // dma can start on even cycle
-                    new_cycles++;
+                    cpu.actual_cycles++;
                     for (int i = 0; i < 3; i++)
                         ppu.execute();
                 }
@@ -83,14 +85,13 @@ int main(int argc, char *argv[])
                     dma_data = bus.cpu_read((bus.oam_dma_page << 8) | bus.oam_dma_addr);
                     bus.oam_dma_addr++;
                     ppu.pOAM[bus.oam_dma_addr] = dma_data;
+                    cpu.actual_cycles += 2;
                     // execute ppu 6 times
                     for (int ii = 0; ii < 6; ii++)
                     {
                         ppu.execute();
                     }
                 }
-                cpu.set_cycles(new_cycles);
-                // cout << "DMA TRANSFER\n";
                 bus.dma_transfer = false;
             }
 

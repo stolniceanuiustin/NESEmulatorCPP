@@ -69,10 +69,10 @@ uint16_t CPU::pop_address()
 
 void CPU::hexdump()
 {
-    FILE* cpu_fullhexdump = fopen("cpuhexdumpfull", "wb");
-    if(cpu_fullhexdump != nullptr)
+    FILE *cpu_fullhexdump = fopen("cpuhexdumpfull", "wb");
+    if (cpu_fullhexdump != nullptr)
     {
-        for(int i=0; i<=0xFFFF; i++)
+        for (int i = 0; i <= 0xFFFF; i++)
         {
             byte buff = read(i);
             fwrite(&buff, 1, 1, cpu_fullhexdump);
@@ -84,7 +84,7 @@ void CPU::hexdump()
 
 uint16_t CPU::read_address(byte offset)
 {
-    uint16_t val = read(offset+1); // little endian
+    uint16_t val = read(offset + 1); // little endian
     val <<= 8;
     val |= read(offset);
     return val;
@@ -93,7 +93,7 @@ uint16_t CPU::read_address(byte offset)
 // The difference between read_address and read_abs_address is that read_abs_address takes a 16bit offset
 uint16_t CPU::read_abs_address(uint16_t offset)
 {
-    uint16_t val = read(offset+1); // little endian
+    uint16_t val = read(offset + 1); // little endian
     val <<= 8;
     val |= read(offset);
     return val;
@@ -122,6 +122,7 @@ bool CPU::reset()
     N = 0;
     bus->reset();
     cycles = 0;
+    actual_cycles = 0;
     return true;
 }
 
@@ -312,6 +313,7 @@ void CPU::init()
     SP = 0xFD;
     PC = read_abs_address(RESET_VECTOR);
     pending_nmi = false;
+    actual_cycles = 0;
 }
 
 // TODO : IMPLEMENT UNOFFICIAL OPCODES:
@@ -319,272 +321,282 @@ void CPU::init()
 // SOME CAN EVEN CROSS PAGES :))))))))))))))
 
 // This function runes one opcode, not one cycle. My emulator does not aim to be cycle accurate
+// CPU EXECUTE NOW DOES ONLY ONE CLOCK
+
 int CPU::execute()
 {
-    // TODO ADD ELSE IFS!
-    if (pending_nmi == true)
+    if (cycles == 0 || actual_cycles > cycles)
     {
-        trigger_nmi();
-       //SDL::state = PAUSED;
+        if (pending_nmi == true)
+        {
+            trigger_nmi();
+        }
+        else
+        {
+            bool onaddress_group2 = false;
+            bool page_cross = false;
+            int original_cycles = cycles;
+            if (PC == 0xFFFF)
+            {
+                cout << "End of program";
+                // cpu->state = QUIT;
+                return -1;
+            }
+
+            // OPCODE deconstruction as described here:
+            // https://llx.com/Neil/a2/opcodes.html
+            inst.opcode = read_pc();
+            inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
+            inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
+            inst.cc = (0x03 & inst.opcode);            // last 2 bits
+            inst.xx = (0b11000000 & inst.opcode) >> 6; // first 2 bits(xx)
+            inst.y = (0b00100000 & inst.opcode) >> 5;  // third bit from the left;
+            byte last_5_bits = (0b00011111 & inst.opcode);
+            byte low_nibble = inst.opcode & 0x0F;
+            byte high_nibble = inst.opcode >> 4;
+            uint16_t address = 0;
+            //HERE WE HAVE THE INSTRUCTION, now we can count the cycles its gonna take 
+            int next_inst_cylces = estimate_cycles();
+            // Some unofficial opcodes(not all yet)
+            if (inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
+            {
+                PC += 1;
+                cycles += 3;
+            }
+            else if (inst.opcode == 0x0C)
+            {
+                PC += 2;
+                cycles += 4;
+            }
+            else if (inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
+            {
+                PC += 1;
+                cycles += 4;
+            }
+
+            else if (low_nibble == 0x00 && last_5_bits == 0b00010000)
+            {
+                // Branching instructions
+                int8_t branch_position = (int8_t)read_pc();
+                bool branch_succeded = false;
+                bool page_cross = false;
+                uint16_t aux_pc = PC;
+                if (inst.xx == 0b00 && N == inst.y)
+                    branch_succeded = true;
+                else if (inst.xx == 0b01 && O == inst.y)
+                    branch_succeded = true;
+                else if (inst.xx == 0b10 && C == inst.y)
+                    branch_succeded = true;
+                else if (inst.xx == 0b11 && Z == inst.y)
+                    branch_succeded = true;
+
+                if (branch_succeded)
+                {
+                    PC += branch_position;
+                    page_cross = (aux_pc & 0xFF00) != (PC & 0xFF00);
+                }
+                cycles += 2 + (int)branch_succeded + 2 * (int)page_cross;
+            }
+
+            else if (inst.opcode == 0x00)
+            {
+                BRK();
+                // brk = forced interrupt.
+            }
+            else if (inst.opcode == 0x20)
+            {
+                address = read_abs_address(PC);
+                PC += 1;
+                JSR_abs(address);
+            }
+            else if (inst.opcode == 0x40)
+            {
+                RTI();
+            }
+            else if (inst.opcode == 0x60)
+            {
+                RTS(); // return from subroutine;
+            }
+            // for single byte instructions !
+            else if (low_nibble == 0x08)
+            {
+                run_instruction_group_sb1();
+            }
+            else if (low_nibble == 0x0A && high_nibble >= 0x08)
+            {
+                run_instruction_group_sb2();
+            }
+            else
+                switch (inst.cc)
+                {
+                // compute_addr_mode DOES return an address via reffrence(&)
+                case 0x01: // cc = 1
+                    address = compute_addr_mode_g1(page_cross);
+                    run_instruction_group1(address, page_cross);
+                    break;
+                case 0x02: // cc = 10
+                    // Will return address via pointer, the function returns a boolean.
+                    onaddress_group2 = compute_addr_mode_g23(page_cross, address);
+                    if (onaddress_group2 == true)
+                        run_instruction_group2(address, page_cross, 0); // Not accumulator, on address
+                    else
+                        run_instruction_group2(null_address, page_cross, 1); // On accumulator
+                    break;
+                case 0x0: // cc = 00
+                    compute_addr_mode_g23(page_cross, address);
+                    run_instruction_group3(address, page_cross);
+                    break;
+                }
+
+            return 1;
+        }
+        return 1;
     }
     else
     {
-        bool onaddress_group2 = false;
-        /*uint16_t original_pc = PC;
-        byte original_flags = pack_flags();
-        byte original_A = A;
-        byte original_Y = Y;
-        byte original_X = X;
-        byte original_SP = SP;*/
-        bool page_cross = false;
-        int original_cycles = cycles;
-
-        if (original_pc == 0xFFFF)
-        {
-            cout << "End of program";
-            // cpu->state = QUIT;
-            return -1;
-        }
-
-        //OPCODE deconstruction as described here:
-        //https://llx.com/Neil/a2/opcodes.html
-        inst.opcode = read_pc();
-        inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
-        inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
-        inst.cc = (0x03 & inst.opcode);            // last 2 bits
-        inst.xx = (0b11000000 & inst.opcode) >> 6; // first 2 bits(xx)
-        inst.y = (0b00100000 & inst.opcode) >> 5;  // third bit from the left;
-        byte last_5_bits = (0b00011111 & inst.opcode);
-        byte low_nibble = inst.opcode & 0x0F;
-        byte high_nibble = inst.opcode >> 4;
-        uint16_t address = 0;
-        
-        //Some unofficial opcodes(not all yet)
-        if (inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
-        {
-            PC += 1;
-            cycles += 3;
-        }
-        else if (inst.opcode == 0x0C)
-        {
-            PC += 2;
-            cycles += 4;
-        }
-        else if (inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
-        {
-            PC += 1;
-            cycles += 4;
-        }
-
-        else if (low_nibble == 0x00 && last_5_bits == 0b00010000)
-        {
-            //Branching instructions
-            int8_t branch_position = (int8_t)read_pc();
-            bool branch_succeded = false;
-            bool page_cross = false;
-            uint16_t aux_pc = PC;
-            if (inst.xx == 0b00 && N == inst.y)
-                branch_succeded = true;
-            else if (inst.xx == 0b01 && O == inst.y)
-                branch_succeded = true;
-            else if (inst.xx == 0b10 && C == inst.y)
-                branch_succeded = true;
-            else if (inst.xx == 0b11 && Z == inst.y)
-                branch_succeded = true;
-
-            if (branch_succeded)
-            {
-                PC += branch_position;
-                page_cross = (aux_pc & 0xFF00) != (PC & 0xFF00);
-            }
-            cycles += 2 + (int)branch_succeded + 2 * (int)page_cross;
-        }
-
-        else if (inst.opcode == 0x00)
-        {
-            BRK();
-            // brk = forced interrupt.
-        }
-        else if (inst.opcode == 0x20)
-        {
-            address = read_abs_address(PC);
-            PC += 1;
-            JSR_abs(address);
-        }
-        else if (inst.opcode == 0x40)
-        {
-            RTI();
-        }
-        else if (inst.opcode == 0x60)
-        {
-            RTS(); // return from subroutine;
-        }
-        // for single byte instructions !
-        else if (low_nibble == 0x08)
-        {
-            run_instruction_group_sb1();
-        }
-        else if (low_nibble == 0x0A && high_nibble >= 0x08)
-        {
-            run_instruction_group_sb2();
-        }
-        else
-            switch (inst.cc)
-            {
-            // compute_addr_mode DOES return an address via reffrence(&)
-            case 0x01: // cc = 1
-                address = compute_addr_mode_g1(page_cross);
-                run_instruction_group1(address, page_cross);
-                break;
-            case 0x02: // cc = 10
-                // Will return address via pointer, the function returns a boolean.
-                onaddress_group2 = compute_addr_mode_g23(page_cross, address);
-                if (onaddress_group2 == true)
-                    run_instruction_group2(address, page_cross, 0); // Not accumulator, on address
-                else
-                    run_instruction_group2(null_address, page_cross, 1); // On accumulator
-                break;
-            case 0x0: // cc = 00
-                compute_addr_mode_g23(page_cross, address);
-                run_instruction_group3(address, page_cross);
-                break;
-            }
-
-        return 1;
+        actual_cycles += 1;
+        return 0;
     }
-    return 1;
 }
 
 std::string CPU::execute_debug()
 {
     // TODO ADD ELSE IFS!
-    if (pending_nmi == true)
-        trigger_nmi();
+    if (cycles == 0 || actual_cycles > cycles)
+    {
+        if (pending_nmi == true)
+            trigger_nmi();
+        else
+        {
+            bool onaddress_group2 = false;
+            uint16_t original_pc = PC;
+            byte original_flags = pack_flags();
+            byte original_A = A;
+            byte original_Y = Y;
+            byte original_X = X;
+            byte original_SP = SP;
+            bool page_cross = false;
+            int original_cycles = cycles;
+
+            if (original_pc == 0xFFFF)
+            {
+                cout << "End of program";
+                // cpu->state = QUIT;
+                return "FAIL";
+            }
+
+            // OPCODE deconstruction as described here:
+            // https://llx.com/Neil/a2/opcodes.html
+            inst.opcode = read_pc();
+            inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
+            inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
+            inst.cc = (0x03 & inst.opcode);            // last 2 bits
+            inst.xx = (0b11000000 & inst.opcode) >> 6; // first 2 bits(xx)
+            inst.y = (0b00100000 & inst.opcode) >> 5;  // third bit from the left;
+            byte last_5_bits = (0b00011111 & inst.opcode);
+            byte low_nibble = inst.opcode & 0x0F;
+            byte high_nibble = inst.opcode >> 4;
+            uint16_t address = 0;
+
+            // Some unofficial opcodes(not all yet)
+            if (inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
+            {
+                PC += 1;
+                cycles += 3;
+            }
+            else if (inst.opcode == 0x0C)
+            {
+                PC += 2;
+                cycles += 4;
+            }
+            else if (inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
+            {
+                PC += 1;
+                cycles += 4;
+            }
+
+            else if (low_nibble == 0x00 && last_5_bits == 0b00010000)
+            {
+                // Branching instructions
+                int8_t branch_position = (int8_t)read_pc();
+                bool branch_succeded = false;
+                bool page_cross = false;
+                uint16_t aux_pc = PC;
+                if (inst.xx == 0b00 && N == inst.y)
+                    branch_succeded = true;
+                else if (inst.xx == 0b01 && O == inst.y)
+                    branch_succeded = true;
+                else if (inst.xx == 0b10 && C == inst.y)
+                    branch_succeded = true;
+                else if (inst.xx == 0b11 && Z == inst.y)
+                    branch_succeded = true;
+
+                if (branch_succeded)
+                {
+                    PC += branch_position;
+                    page_cross = (aux_pc & 0xFF00) != (PC & 0xFF00);
+                }
+                cycles += 2 + (int)branch_succeded + 2 * (int)page_cross;
+            }
+
+            else if (inst.opcode == 0x00)
+            {
+                BRK();
+                // brk = forced interrupt.
+            }
+            else if (inst.opcode == 0x20)
+            {
+                address = read_abs_address(PC);
+                PC += 1;
+                JSR_abs(address);
+            }
+            else if (inst.opcode == 0x40)
+            {
+                RTI();
+            }
+            else if (inst.opcode == 0x60)
+            {
+                RTS(); // return from subroutine;
+            }
+            // for single byte instructions !
+            else if (low_nibble == 0x08)
+            {
+                run_instruction_group_sb1();
+            }
+            else if (low_nibble == 0x0A && high_nibble >= 0x08)
+            {
+                run_instruction_group_sb2();
+            }
+            else
+                switch (inst.cc)
+                {
+                // compute_addr_mode DOES return an address via reffrence(&)
+                case 0x01: // cc = 1
+                    address = compute_addr_mode_g1(page_cross);
+                    run_instruction_group1(address, page_cross);
+                    break;
+                case 0x02: // cc = 10
+                    // Will return address via pointer, the function returns a boolean.
+                    onaddress_group2 = compute_addr_mode_g23(page_cross, address);
+                    if (onaddress_group2 == true)
+                        run_instruction_group2(address, page_cross, 0); // Not accumulator, on address
+                    else
+                        run_instruction_group2(null_address, page_cross, 1); // On accumulator
+                    break;
+                case 0x0: // cc = 00
+                    compute_addr_mode_g23(page_cross, address);
+                    run_instruction_group3(address, page_cross);
+                    break;
+                }
+
+            std::string debug_output = tracer.tracer(original_pc, original_flags, original_A, original_X, original_Y, original_SP, original_cycles);
+            return debug_output;
+        }
+        return "NMI TRIGGER\n";
+    }
     else
     {
-        bool onaddress_group2 = false;
-        uint16_t original_pc = PC;
-        byte original_flags = pack_flags();
-        byte original_A = A;
-        byte original_Y = Y;
-        byte original_X = X;
-        byte original_SP = SP;
-        bool page_cross = false;
-        int original_cycles = cycles;
-
-        if (original_pc == 0xFFFF)
-        {
-            cout << "End of program";
-            // cpu->state = QUIT;
-            return "FAIL";
-        }
-
-        //OPCODE deconstruction as described here:
-        //https://llx.com/Neil/a2/opcodes.html
-        inst.opcode = read_pc();
-        inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
-        inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
-        inst.cc = (0x03 & inst.opcode);            // last 2 bits
-        inst.xx = (0b11000000 & inst.opcode) >> 6; // first 2 bits(xx)
-        inst.y = (0b00100000 & inst.opcode) >> 5;  // third bit from the left;
-        byte last_5_bits = (0b00011111 & inst.opcode);
-        byte low_nibble = inst.opcode & 0x0F;
-        byte high_nibble = inst.opcode >> 4;
-        uint16_t address = 0;
-        
-        //Some unofficial opcodes(not all yet)
-        if (inst.opcode == 0x04 || inst.opcode == 0x44 || inst.opcode == 0x64)
-        {
-            PC += 1;
-            cycles += 3;
-        }
-        else if (inst.opcode == 0x0C)
-        {
-            PC += 2;
-            cycles += 4;
-        }
-        else if (inst.opcode == 0x14 || inst.opcode == 0x34 || inst.opcode == 0x54 || inst.opcode == 0x74 || inst.opcode == 0xD4 || inst.opcode == 0xF4)
-        {
-            PC += 1;
-            cycles += 4;
-        }
-
-        else if (low_nibble == 0x00 && last_5_bits == 0b00010000)
-        {
-            //Branching instructions
-            int8_t branch_position = (int8_t)read_pc();
-            bool branch_succeded = false;
-            bool page_cross = false;
-            uint16_t aux_pc = PC;
-            if (inst.xx == 0b00 && N == inst.y)
-                branch_succeded = true;
-            else if (inst.xx == 0b01 && O == inst.y)
-                branch_succeded = true;
-            else if (inst.xx == 0b10 && C == inst.y)
-                branch_succeded = true;
-            else if (inst.xx == 0b11 && Z == inst.y)
-                branch_succeded = true;
-
-            if (branch_succeded)
-            {
-                PC += branch_position;
-                page_cross = (aux_pc & 0xFF00) != (PC & 0xFF00);
-            }
-            cycles += 2 + (int)branch_succeded + 2 * (int)page_cross;
-        }
-
-        else if (inst.opcode == 0x00)
-        {
-            BRK();
-            // brk = forced interrupt.
-        }
-        else if (inst.opcode == 0x20)
-        {
-            address = read_abs_address(PC);
-            PC += 1;
-            JSR_abs(address);
-        }
-        else if (inst.opcode == 0x40)
-        {
-            RTI();
-        }
-        else if (inst.opcode == 0x60)
-        {
-            RTS(); // return from subroutine;
-        }
-        // for single byte instructions !
-        else if (low_nibble == 0x08)
-        {
-            run_instruction_group_sb1();
-        }
-        else if (low_nibble == 0x0A && high_nibble >= 0x08)
-        {
-            run_instruction_group_sb2();
-        }
-        else
-            switch (inst.cc)
-            {
-            // compute_addr_mode DOES return an address via reffrence(&)
-            case 0x01: // cc = 1
-                address = compute_addr_mode_g1(page_cross);
-                run_instruction_group1(address, page_cross);
-                break;
-            case 0x02: // cc = 10
-                // Will return address via pointer, the function returns a boolean.
-                onaddress_group2 = compute_addr_mode_g23(page_cross, address);
-                if (onaddress_group2 == true)
-                    run_instruction_group2(address, page_cross, 0); // Not accumulator, on address
-                else
-                    run_instruction_group2(null_address, page_cross, 1); // On accumulator
-                break;
-            case 0x0: // cc = 00
-                compute_addr_mode_g23(page_cross, address);
-                run_instruction_group3(address, page_cross);
-                break;
-            }
-
-        std::string debug_output = tracer.tracer(original_pc, original_flags, original_A, original_X, original_Y, original_SP, original_cycles);
-        return debug_output;
+        actual_cycles += 1;
+        return "MID_INSTRUCTION_CLOCK\n";
     }
-    return "NMI TRIGGER\n";
 }

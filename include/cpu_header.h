@@ -38,6 +38,7 @@ public:
 	uint16_t PC;
 	byte SP; // Stack pointer
 	uint64_t cycles;
+	uint64_t actual_cycles;
 public:
 	// Cpu Flags
 	byte C; // carry
@@ -116,8 +117,9 @@ public:
 
 	
 	
-
-
+	int estimate_cycles();
+	int estimate_cycles_group_sb1();
+	int estimate_cycles_group_sb2();
 	// First group of instructions
 	void set_ZN(byte value);
 	uint16_t compute_addr_mode_g1(bool &page_cross);

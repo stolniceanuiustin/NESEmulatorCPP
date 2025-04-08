@@ -355,8 +355,6 @@ void CPU::CPX(uint16_t address)
 Single Byte instructions
 */
 
-#include "../include/cpu_header.h"
-
 byte CPU::pack_flags()
 {
     byte to_return = 0;
@@ -482,6 +480,7 @@ void CPU::CLV()
 void CPU::CLD()
 {
     //SHOULDNT USE IN NES EMU
+    std::cout << "CLD shouldn't be used\n";
     D = 0;
     cycles += 2; 
 }
@@ -529,9 +528,6 @@ void CPU::DEX()
 /*
 interrupts
 */
-
-#include "../include/cpu_header.h"
-#include <iostream>
 void CPU::NOP()
 {
     cycles += 2;
@@ -556,7 +552,8 @@ void CPU::BRK()
 {
     trigger_irq();
     B = 1;
-    cycles += 3;
+    //TODO CHECK THIS: shouldn't happen in NES
+    cycles += 7;
 }
 
 
@@ -571,6 +568,7 @@ void CPU::trigger_irq()
         push(pack_flags());
         PC = read_abs_address(IRQ_vector);
         I = 1;
+        std::cout << "IRQ TRIGGERED. CHECK FUNCTION FOR CYCLE COUNT!\n";
     }
 }
 
