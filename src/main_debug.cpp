@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
 					timespec requested_time;
 					timespec remaining_time;
 					requested_time.tv_nsec = 33333 - time_elapsed;
-					// nanosleep(&requested_time, &remaining_time);
-					// cout << end_time << " " << start_time << std::endl;
+					nanosleep(&requested_time, &remaining_time);
+					//cout << end_time << " " << start_time << std::endl;
 				}
 			}
 			if (frames == 30) {
