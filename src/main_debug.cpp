@@ -11,7 +11,6 @@
 #include "../include/ppu.h"
 #include "../include/unittest.h"
 #include "SDL.h"
-
 using std::cout;
 
 const double CLK_TIME = 1.0 / 1789773.0;
@@ -39,16 +38,17 @@ int main(int argc, char *argv[]) {
 	cpu.init();
 
 	SDL sdl(screen, bus);
-	init_sdl(sdl);
+	init_sdl(sdl, false);
 	sdl.state = PAUSED;
 	config.code_segment = cpu.read_abs_address(0xFFFC);
 	//cpu.PC = 0xC000;
 	// TODO run for one frmae then sleep
 	// TODO check with sanitiser
 	int frames = 0;
-	sdl.state == RUNNING;
-	while (1) {
-		handle_input(sdl);
+	std::thread input_thread(input_thread_function, std::ref(sdl));
+	while (sdl.running) {
+		//handle_input(sdl);
+		sdl.bus.controller[0] = sdl.controller_input_buffer;
 		if (sdl.state == RUNNING) {
 			uint32_t start_time = SDL_GetTicks();
 			uint32_t end_time = 0;
@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
 					timespec requested_time;
 					timespec remaining_time;
 					requested_time.tv_nsec = 33333 - time_elapsed;
-					//nanosleep(&requested_time, &remaining_time);
-					//cout << end_time << " " << start_time << std::endl;
+					// nanosleep(&requested_time, &remaining_time);
+					// cout << end_time << " " << start_time << std::endl;
 				}
 			}
 			if (frames == 30) {
@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
 			}
 			continue;
 		} else if (sdl.state == QUIT) {
+			sdl.running = false;
 			bus.hexdump();
 			ppu.hexdump();
 			cpu.hexdump();
@@ -95,6 +96,8 @@ int main(int argc, char *argv[]) {
 	}
 ENDLOOP:
 	destroy_sdl(sdl);
+	if(input_thread.joinable())
+		input_thread.join();
 	// ram.hexdump();
 
 	// SDL_DestroyRenderer(renderer);

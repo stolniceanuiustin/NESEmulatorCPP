@@ -71,9 +71,9 @@ byte BUS::cpu_read(uint16_t addr)
     {
         byte data = (controller_state[addr & 1] & 0x80) > 0 ? 1 : 0;
         controller_state[addr & 1] <<= 1;
-        if (data)
-            std::cout << (int)data << '\n';
-        // std::cerr << "INPUT REGISTERS READ\n";
+        // if (data)
+        //     std::cout << (int)data << '\n';
+        // // std::cerr << "INPUT REGISTERS READ\n";
         return data; // bit 6 shjould always be set to 1 due to open bus behaviour
     }
     else

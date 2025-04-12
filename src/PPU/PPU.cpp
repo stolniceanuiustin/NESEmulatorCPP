@@ -549,8 +549,8 @@ void PPU::execute()
         {
             set_vblank();
 
-            if (pause_after_frame)
-                SDL::state = PAUSED;
+            // if (pause_after_frame)
+            //     SDL::state = PAUSED;
             if (control.enable_nmi == 1)
             {
                 cpu.enqueue_nmi();

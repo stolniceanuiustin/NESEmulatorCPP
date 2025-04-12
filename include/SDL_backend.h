@@ -6,6 +6,7 @@
 #include <../include/bus.h>
 #include <string>
 #include <thread>
+#include <mutex>
 #include <atomic>
 typedef enum
 {
@@ -24,15 +25,18 @@ public:
     SDL_Window* debugWindow;
     Screen &screen;
     BUS& bus;
-    static STATE state;
+    STATE state;
     bool tick;
     bool render_one_frame = false;
     SDL(Screen &screen, BUS& bus) : screen(screen), bus(bus) {};
     void render_frame();
     std::atomic<byte> controller_input_buffer{0};
+    std::mutex input_mutex;
+    std::atomic<bool> running{true};
 };
-int init_sdl(SDL &sdl);
+int init_sdl(SDL &sdl, bool debug);
 bool handle_input(SDL &sdl);
 void destroy_sdl(SDL &sdl);
 void render_text(SDL& sdl, const std::string& text);
+void input_thread_function(SDL &sdl);
 #endif
