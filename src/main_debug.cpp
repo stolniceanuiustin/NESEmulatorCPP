@@ -14,7 +14,7 @@
 using std::cout;
 
 const double CLK_TIME = 1.0 / 1789773.0;
-
+uint64_t frame_duration = 1e9/60.0;
 int main(int argc, char *argv[]) {
 	// TODO : move everything to bus, use this just for parsing!
 	if (argc < 2) {
@@ -57,13 +57,15 @@ int main(int argc, char *argv[]) {
 				// cout << "=======RENDERING FRAME=======" << frames << '\n';
 				sdl.render_frame();
 				frames++;
-				uint32_t end_time = SDL_GetTicks();
+				uint32_t end_time = SDL_GetTicks(); 
 				screen.RENDER_ENABLED = false;
-				double time_elapsed = (end_time - start_time) * 1000;
-				if (time_elapsed < 33333) {
+				double time_elapsed = (end_time - start_time) * 1e6;
+				if (time_elapsed < frame_duration) {
+					//SDL_Delay(static_cast<uint32_t>(frame_duration - time_elapsed));
 					timespec requested_time;
 					timespec remaining_time;
-					requested_time.tv_nsec = 33333 - time_elapsed;
+					requested_time.tv_nsec = frame_duration - time_elapsed;
+					//cout << requested_time.tv_nsec << '\n';
 					nanosleep(&requested_time, &remaining_time);
 					//cout << end_time << " " << start_time << std::endl;
 				}
