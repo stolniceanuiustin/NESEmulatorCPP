@@ -233,7 +233,7 @@ string compute_instruction_name_group3(byte aaa, string &observations)
     return "";
 }
 
-std::string TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte SP, int cycles)
+std::string TRACER::tracer(CPU_VARS cpu_state)
 {
     // ADDRESSING MODES AT https://llx.com/Neil/a2/opcodes.html
     // LOG: Address, OPCODE, INST, A:, X:, Y:, P:, SP:
@@ -241,7 +241,7 @@ std::string TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte
 
     string observations = "";
     Instruction inst;
-    inst.opcode = cpu.ram_at(PC);
+    inst.opcode = cpu.ram_at(cpu_state.PC);
     inst.aaa = (0xE0 & inst.opcode) >> 5;      // first 3 bits of the opcode
     inst.bbb = (0x1C & inst.opcode) >> 2;      // second 3 bits
     inst.cc = (0x03 & inst.opcode);            // last 2 bits
@@ -276,10 +276,10 @@ std::string TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte
         branch_instruction = true;
         instruction_length = 2;
         // here we have branching
-        int8_t branch_position = (int8_t)cpu.ram_at(PC + 1);
+        int8_t branch_position = (int8_t)cpu.ram_at(cpu_state.PC + 1);
         bool branch_succeded = false;
         bool page_cross = false;
-        uint16_t aux_pc = PC;
+        uint16_t aux_pc = cpu_state.PC;
         if (inst.xx == 0b00)
         {
             if (cpu.N == inst.y)
@@ -446,88 +446,91 @@ std::string TRACER::tracer(uint16_t PC, byte FLAGS, byte A, byte X, byte Y, byte
     std::stringstream ss;
 
     // Output the PC address in hex
-    ss << std::hex << std::uppercase << PC << " ";
+    ss << std::hex << std::uppercase << cpu_state.PC << " ";
 
     // Instruction bytes
     if (instruction_length == 1)
     {
         ss << std::hex << std::uppercase
-           << (int)cpu.ram_at(PC) << std::setw(7) << std::setfill(' ');
+           << (int)cpu.ram_at(cpu_state.PC) << std::setw(7) << std::setfill(' ');
     }
     else if (instruction_length == 2)
     {
         ss << std::hex << std::uppercase
-           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
-           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1)
+           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(cpu_state.PC) << " "
+           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(cpu_state.PC + 1)
            << std::setw(4) << std::setfill(' ');
     }
     else if (instruction_length == 3)
     {
         ss << std::hex << std::uppercase
-           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC) << " "
-           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 1) << " "
-           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(PC + 2);
+           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(cpu_state.PC) << " "
+           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(cpu_state.PC + 1) << " "
+           << std::setw(2) << std::setfill(' ') << (int)cpu.ram_at(cpu_state.PC + 2);
     }
 
     ss << " " << instruction_name << "    ";
 
     // CPU Registers
     ss << std::hex << std::uppercase
-       << "A:" << std::setw(2) << (int)A << " "
-       << "X:" << std::setw(2) << (int)X << " "
-       << "Y:" << std::setw(2) << (int)Y << " "
-       << "P:" << std::setw(2) << (int)FLAGS << " "
+       << "A:" << std::setw(2) << (int)cpu_state.A << " "
+       << "X:" << std::setw(2) << (int)cpu_state.X << " "
+       << "Y:" << std::setw(2) << (int)cpu_state.Y << " "
+       << "P:" << std::setw(2) << (int)cpu_state.flags << " "
        << "SP:" << (int)cpu.get_SP() << " "
-       << "CYC:" << std::dec << (int)cycles;
+       << "CYC:" << std::dec << (int)cpu_state.cylces;
 
+    
+    //cout << ss.str();
+    
+    
+    //TODO : check nestest again with cpu clock stepped. probably messing the cycle count of a instruction i think!
+    
+    if (!logs)
+    {
+        std::cout << "could not open correct log file";
+    }
+       string log_entry;
+       getline(logs, log_entry);
+
+       string log_address = log_entry.substr(0, log_entry.find(" "));
+
+        int a_value = get_string_value("A:", log_entry);
+        int x_value = get_string_value("X:", log_entry);
+        int y_value = get_string_value("Y:", log_entry);
+        int p_value = get_string_value("P:", log_entry);
+        int sp_value = get_string_value("SP:", log_entry);
+        int cycle_value = get_string_value("CYC:", log_entry);
+        // if (log_address.compare(address_string))
+        // {
+        //     ss << " address problem here!";
+        // }
+        // if (p_value != cpu_state.flags)
+        // {
+        //     ss << " flag problem here!";
+        // }
+        // if (a_value != cpu_state.A)
+        // {
+        //     ss << "A problem here!";
+        // }
+        // if (x_value != cpu_state.X)
+        // {
+        //     ss << "X problem here!";
+        // }
+        // if (y_value != cpu_state.Y)
+        // {
+        //     ss << "Y problem here!";
+        // }
+        // if (sp_value != cpu_state.SP)
+        // {
+        //     ss << "SP problem herE!";
+        // }
+        // if(cpu_state.cylces + 7 != cycle_value)
+        // {
+        //     ss << "CYCLE problem HERE!";
+        // }
+    //int t = 0;
     ss << '\n';
     cout << ss.str();
     return ss.str();
-    
-    // if (!logs)
-    // {
-    //     cout << "could not open correct log file";
-    // }
-
-    //    string log_entry;
-    //    getline(logs, log_entry);
-
-    //    string log_address = log_entry.substr(0, log_entry.find(" "));
-
-    //     int a_value = get_string_value("A:", log_entry);
-    //     int x_value = get_string_value("X:", log_entry);
-    //     int y_value = get_string_value("Y:", log_entry);
-    //     int p_value = get_string_value("P:", log_entry);
-    //     int sp_value = get_string_value("SP:", log_entry);
-    //     int cycle_value = get_string_value("CYC:", log_entry);
-    //     if (log_address.compare(address_string))
-    //     {
-    //         cout << " address problem here!";
-    //     }
-    //     if (p_value != FLAGS)
-    //     {
-    //         cout << " flag problem here!";
-    //     }
-    //     if (a_value != A)
-    //     {
-    //         cout << "A problem here!";
-    //     }
-    //     if (x_value != X)
-    //     {
-    //         cout << "X problem here!";
-    //     }
-    //     if (y_value != Y)
-    //     {
-    //         cout << "Y problem here!";
-    //     }
-    //     if (sp_value != SP)
-    //     {
-    //         cout << "SP problem herE!";
-    //     }
-    //     if(cycles != cycle_value)
-    //     {
-    //         cout << "CYCLE problem HERE!";
-    //     }
-    //cout << '\n';
-    //int t = 0;
 }

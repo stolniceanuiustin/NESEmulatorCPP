@@ -11,6 +11,13 @@ class BUS;
 class TRACER;
 typedef uint8_t byte;
 
+typedef enum
+{
+	FETCH_INSTRUCTION,
+	WAIT_FOR_N_CYCLES,
+	EXECUTE
+}CPU_STATE;
+
 struct Mem
 {
 	int x;
@@ -26,6 +33,8 @@ struct Instruction
 	byte y;
 };
 
+
+
 class CPU
 {
 public:
@@ -38,6 +47,8 @@ public:
 	uint16_t PC;
 	byte SP; // Stack pointer
 	uint64_t cycles;
+	int64_t estimated_cycles = 0;
+	uint64_t elapsed_cycles = 0;
 public:
 	// Cpu Flags
 	byte C; // carry
@@ -98,14 +109,18 @@ public:
 	}
 	byte pack_flags();
 	void unpack_flags(byte flags);
-
+	CPU_VARS pack_vars();
 	byte read_pc();
 	byte read(uint16_t address);
 	void write(uint16_t address, byte data);
 
 	uint16_t read_address_from_pc();
 	uint16_t read_address(byte offset);
-	int execute();
+
+	CPU_STATE state = FETCH_INSTRUCTION;
+	std::string execute(bool debug);
+	void fetch_instruction();
+	std::string clock(bool debug);
 	std::string execute_debug();
 	uint16_t read_abs_address(uint16_t offset);
 	void push(byte x);
@@ -114,10 +129,15 @@ public:
 	uint16_t pop_address();
 	
 
-	
-	
-
-
+	//CYCLE ESTIMATION
+	int estimate_cycles();
+	int estimate_cycles_group_sb1();
+	int estimate_cycles_group_sb2();
+	bool estimate_page_cross_g1();
+	int estimate_cycles_group_1();
+	int estimate_cycles_group_2();
+	int estimate_cycles_group_3();
+	bool estimate_page_cross_g23();
 	// First group of instructions
 	void set_ZN(byte value);
 	uint16_t compute_addr_mode_g1(bool &page_cross);

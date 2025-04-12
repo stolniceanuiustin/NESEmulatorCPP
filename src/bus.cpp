@@ -91,6 +91,7 @@ void BUS::reset()
     dma_transfer = false;
     oam_dma_page = 0x00;
     oam_dma_addr = 0x00;
+    global_clock = 1;
 }
 
 void BUS::hexdump()
@@ -99,16 +100,45 @@ void BUS::hexdump()
     ppu_ram.hexdump("ppu_hexdump", 0x3FFF);
 }
 
-void BUS::clock()
+std::string BUS::clock(bool debug)
 {
-    old_cycles = cpu.get_cycles();
-    cpu.execute();
-    new_cycles = cpu.get_cycles();
-    cycles_elapsed = new_cycles - old_cycles;
-    for (int i = 0; i < cycles_elapsed; i++)
+    ppu.execute();
+    std::string output_string = "";
+    if(global_clock % 3 == 0)
     {
-        ppu.execute();
-        ppu.execute();
-        ppu.execute();
+        if(dma_transfer == true)
+        {
+            if(dma_first_clock)
+            {
+                if(global_clock % 2 == 1)
+                {
+                    dma_first_clock = false;
+                }
+            }
+            else 
+            {
+                if(global_clock % 2 == 0)
+                {
+                    oam_dma_data = cpu_read(oam_dma_page << 8 | oam_dma_addr);
+                }
+                else {
+                    ppu.pOAM[oam_dma_addr] = oam_dma_data;
+                    oam_dma_addr++;
+                    if(oam_dma_addr == 0x00)
+                    {
+                        dma_transfer = false;
+                        dma_first_clock = true;
+                    }
+                }
+            }
+        }
+        else
+        { 
+            if(debug)
+                output_string = cpu.clock(debug);
+            else cpu.clock(debug);
+        }
     }
+    global_clock++;
+    return output_string;
 }
