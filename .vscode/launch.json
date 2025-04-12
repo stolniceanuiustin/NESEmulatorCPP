@@ -5,7 +5,7 @@
         "name": "Debug",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder}/debugdir_nosanitize/emulator",  
+        "program": "${workspaceFolder}/debugdir/emulator",  
         "args": ["roms/smb.nes"],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",

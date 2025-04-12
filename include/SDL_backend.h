@@ -5,6 +5,8 @@
 #include <SDL_ttf.h>
 #include <../include/bus.h>
 #include <string>
+#include <thread>
+#include <atomic>
 typedef enum
 {
     QUIT,
@@ -14,6 +16,7 @@ typedef enum
 class SDL
 {
 public:
+    std::atomic<STATE> atomic_state;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Surface *surface;
@@ -26,6 +29,7 @@ public:
     bool render_one_frame = false;
     SDL(Screen &screen, BUS& bus) : screen(screen), bus(bus) {};
     void render_frame();
+    std::atomic<byte> controller_input_buffer{0};
 };
 int init_sdl(SDL &sdl);
 bool handle_input(SDL &sdl);

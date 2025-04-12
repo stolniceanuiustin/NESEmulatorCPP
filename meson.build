@@ -25,7 +25,8 @@ src_files = [
     'src/SDL/SDL_backend.cpp',
     'src/Cartridge.cpp',
     'src/bus.cpp',
-    'src/Log.cpp'
+    'src/Log.cpp',
+    'src/CPU/cycle_counting.cpp'
 ]
 
 
