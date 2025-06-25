@@ -1,21 +1,79 @@
-Emulator NES – Proiect personal în C++
-Am dezvoltat un emulator funcțional pentru consola Nintendo Entertainment System (NES), care permite rularea jocurilor originale (ROM-uri) pe orice platformă compatibilă cu un compilator C++.
-Componente emulate:
-CPU – Ricoh 2A03:
- Am implementat un nucleu compatibil cu procesorul 6502 modificat, fără suport pentru instrucțiunile BCD. Emularea include mecanismul de fetch-decode-execute, tratarea întreruperilor (IRQ/NMI) și sincronizarea precisă a ciclurilor de ceas conform specificațiilor originale.
-PPU – Ricoh 2C02:
- Am reprodus unitatea grafică responsabilă de afișarea imaginii. Funcționalitatea include randarea pe scanline, paletele de culori, afișarea sprite-urilor și logica pentru registrele grafice.
-Controller NES:
- Am emulat comportamentul porturilor de intrare bazate pe shift register, permițând maparea tastaturii moderne la butoanele clasice NES (A, B, Start, Select, direcționale).
-Mapare memorie – Mapper 0 (NROM):
- Suport pentru cartridge-uri standard, fără bank switching. Plănuiesc extinderea suportului pentru mappere mai complexe (ex: MMC1, MMC3) pentru a rula o gamă mai largă de jocuri. In prezent functioneaza bine Donkey Kong si Super Mario Bros.
-Tehnologii utilizate:
-C++ 
-SDL2 – pentru afișare grafică și gestionarea input-ului
-Meson - Build System
-Rezultate și beneficii:
-Acest proiect mi-a oferit o înțelegere practică și detaliată asupra:
-Arhitecturii procesoarelor și interpretării codului mașină
-Sincronizării și comunicării între componente hardware simulate
-Principiilor de funcționare ale graficii 2D bazate pe rasterizare
-Proiectul a fost motivat de pasiunea mea pentru emulatoare, dezvoltându-se din dorința de a înțelege în profunzime cum funcționează consolele clasice și de a-mi construi propriul emulator de la zero.
+NES Emulator – Personal Project in C++
+
+I developed a functional emulator for the Nintendo Entertainment System (NES), allowing original games (ROMs) to run on any platform with a C++ compiler.
+Emulated Components
+CPU – Ricoh 2A03
+
+Implemented a core compatible with the modified 6502 processor, without support for BCD instructions. The emulation includes:
+
+    Fetch-decode-execute loop
+
+    Interrupt handling (IRQ/NMI)
+
+    Precise clock cycle synchronization according to the original specifications
+
+PPU – Ricoh 2C02
+
+Recreated the graphics unit responsible for screen rendering. Features include:
+
+    Scanline-based rendering
+
+    Sprite and Background rendering
+
+NES Controller
+
+Emulated the behavior of NES controller ports based on shift registers, allowing keyboard mapping to classic NES buttons (A, B, Start, Select, D-Pad).
+Memory Mapping – Mapper 0 (NROM)
+
+Implemented support for standard cartridges with no bank switching.
+Currently runs well-tested games like Donkey Kong and Super Mario Bros.
+Support for more complex mappers (e.g., MMC1, MMC3) is planned to expand game compatibility.
+Technologies Used
+
+    C++
+
+    SDL2 – for graphics rendering and input handling
+
+    Meson – build system
+
+Outcomes & Learning
+
+This project gave me hands-on, in-depth understanding of:
+
+    CPU architecture and machine code decoding
+
+    Synchronization and data bus communication between simulated hardware components
+
+    The fundamentals of 2D raster-based graphics rendering
+
+The project was driven by my passion for emulators and the desire to deeply understand how classic consoles work by building one from scratch.
+
+## Build Instructions
+
+### Prerequisites
+
+- C++ compiler (e.g. `g++` or `clang++`)
+- [Meson](https://mesonbuild.com/)
+- [Ninja](https://ninja-build.org/)
+- [SDL2](https://libsdl.org/) development libraries
+
+On Debian/Ubuntu-based systems, you can install the dependencies using:
+
+```bash
+sudo apt install build-essential meson ninja-build libsdl2-dev
+```
+Step 1:
+Clone the repository:
+git clone https://github.com/stolniceanuiustin/NESEmulatorCPP.git
+cd nes-emulator  
+
+Step 2:
+meson setup build  
+
+Step 3:  
+cd build/
+meson compile
+
+Step 4:
+Run the emulator. You will need a valid ROM file(not provided with the repository for copyright reasons)  
+./build/nes_emulator path/to/your_game.nes
