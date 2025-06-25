@@ -63,17 +63,17 @@ On Debian/Ubuntu-based systems, you can install the dependencies using:
 sudo apt install build-essential meson ninja-build libsdl2-dev
 ```
 Step 1:
-Clone the repository:
-git clone https://github.com/stolniceanuiustin/NESEmulatorCPP.git
-cd nes-emulator  
+Clone the repository:  
+git clone https://github.com/stolniceanuiustin/NESEmulatorCPP.git  
+cd NESEmulatorCPP    
 
-Step 2:
-meson setup build  
+Step 2:  
+meson setup build   
 
-Step 3:  
-cd build/
-meson compile
+Step 3:    
+cd build/ 
+meson compile  
 
-Step 4:
+Step 4:  
 Run the emulator. You will need a valid ROM file(not provided with the repository for copyright reasons)  
 ./build/nes_emulator path/to/your_game.nes
