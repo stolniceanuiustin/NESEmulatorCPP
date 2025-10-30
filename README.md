@@ -1,6 +1,7 @@
 NES Emulator – Personal Project in C++
 
-I developed a functional emulator for the Nintendo Entertainment System (NES), allowing original games (ROMs) to run on any platform with a C++ compiler.
+I developed a functional emulator for the Nintendo Entertainment System (NES), allowing original games (ROMs) to run on any platform with a C++ compiler and support for SDL2.  
+
 Emulated Components
 CPU – Ricoh 2A03
 
@@ -22,12 +23,13 @@ Recreated the graphics unit responsible for screen rendering. Features include:
 
 NES Controller
 
-Emulated the behavior of NES controller ports based on shift registers, allowing keyboard mapping to classic NES buttons (A, B, Start, Select, D-Pad).
-Memory Mapping – Mapper 0 (NROM)
+Emulated the behavior of NES controller ports based on shift registers, allowing keyboard mapping to classic NES buttons (A, B, Start, Select, D-Pad).  
+
+Memory Mapping – Mapper 0 (NROM) for now. Support for more complex mappers (e.g., MMC1, MMC3) is planned to expand game compatibility.
 
 Implemented support for standard cartridges with no bank switching.
 Currently runs well-tested games like Donkey Kong and Super Mario Bros.
-Support for more complex mappers (e.g., MMC1, MMC3) is planned to expand game compatibility.
+
 Technologies Used
 
     C++
@@ -46,7 +48,7 @@ This project gave me hands-on, in-depth understanding of:
 
     The fundamentals of 2D raster-based graphics rendering
 
-The project was driven by my passion for emulators and the desire to deeply understand how classic consoles work by building one from scratch.
+The project was driven by my passion for emulators and the desire to deeply understand how classic consoles work by building one from scratch. 
 
 ## Build Instructions
 
