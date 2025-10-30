@@ -1,4 +1,4 @@
-NES Emulator – Personal Project in C++
+## NES Emulator – Personal Project in C++
 
 I developed a functional emulator for the Nintendo Entertainment System (NES), allowing original games (ROMs) to run on any platform with a C++ compiler and support for SDL2.  
 
