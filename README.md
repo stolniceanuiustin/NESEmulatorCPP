@@ -2,10 +2,11 @@
 
 I developed a functional emulator for the Nintendo Entertainment System (NES), allowing original games (ROMs) to run on any platform with a C++ compiler and support for SDL2.  
 
-Emulated Components
+
+## Emulated Components
 
 
-## CPU – Ricoh 2A03
+### CPU – Ricoh 2A03
 
 Implemented a core compatible with the modified 6502 processor, without support for BCD instructions. The emulation includes:
 
@@ -15,7 +16,7 @@ Implemented a core compatible with the modified 6502 processor, without support 
 
     Precise clock cycle synchronization according to the original specifications
 
-## PPU – Ricoh 2C02
+### PPU – Ricoh 2C02
 
 Recreated the graphics unit responsible for screen rendering. Features include:
 
@@ -23,7 +24,7 @@ Recreated the graphics unit responsible for screen rendering. Features include:
 
     Sprite and Background rendering
 
-## NES Controller
+### NES Controller
 
 Emulated the behavior of NES controller ports based on shift registers, allowing keyboard mapping to classic NES buttons (A, B, Start, Select, D-Pad).  
 
