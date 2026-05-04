@@ -51,18 +51,17 @@ void PPU::reset()
 
 byte PPU::ppu_read(uint16_t addr, bool read_only)
 {
-    addr &= 0x3FFF;
-    if (addr >= 0x0000 && addr <= 0x1FFF)
+  addr &= 0x3FFF;
+    if (addr >= 0x0000 && addr <= 0x1FFF) // reading in CHRrom(sprites usually)
     {
+        // hardcoding mapper0
         return cartridge->ppu_read(addr);
     }
-    else if (addr >= 0x2000 && addr <= 0x3EFF)
+    else if (addr >= 0x2000 && addr <= 0x3EFF) // reading in nametable
     {
-        /*
-            https://www.nesdev.org/wiki/Mirroring
-        */
+        // https://www.nesdev.org/wiki/Mirroring
         addr &= 0x0FFF;
-        if (cartridge->mirroring == VERTICAL)
+        if (cartridge->mirroring == HORIZONTAL)
         {
             if (addr >= 0x0000 && addr <= 0x03FF)
                 return nametable[0][addr & 0x03FF];
@@ -73,7 +72,7 @@ byte PPU::ppu_read(uint16_t addr, bool read_only)
             if (addr >= 0x0C00 && addr <= 0x0FFF)
                 return nametable[1][addr & 0x03FF];
         }
-        else if (cartridge->mirroring == HORIZONTAL)
+        else if (cartridge->mirroring == VERTICAL)
         {
             if (addr >= 0x0000 && addr <= 0x03FF)
                 return nametable[0][addr & 0x03FF];
@@ -85,7 +84,7 @@ byte PPU::ppu_read(uint16_t addr, bool read_only)
                 return nametable[1][addr & 0x03FF];
         }
     }
-    else if (addr >= 0x3F00 && addr <= 0x3FFF)
+    else if (addr >= 0x3F00 && addr <= 0x3FFF) // reading in pallete table
     {
         addr &= 0x001F;
         // mirroring:
@@ -121,7 +120,7 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
         */
         // std::cout << "Writing to nametable memory\n";
         addr &= 0x0FFF;
-        if (cartridge->mirroring == VERTICAL)
+        if (cartridge->mirroring == HORIZONTAL)
         {
             if (addr >= 0x0000 && addr <= 0x03FF)
                 nametable[0][addr & 0x03FF] = data;
@@ -132,7 +131,7 @@ void PPU::ppu_write(uint16_t addr, uint8_t data)
             if (addr >= 0x0C00 && addr <= 0x0FFF)
                 nametable[1][addr & 0x03FF] = data;
         }
-        else if (cartridge->mirroring == HORIZONTAL)
+        else if (cartridge->mirroring == VERTICAL)
         {
             if (addr >= 0x0000 && addr <= 0x07FF)
                 nametable[0][addr & 0x03FF] = data;
